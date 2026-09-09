@@ -1,0 +1,45 @@
+# Gradle
+.gradle/
+build/
+**/build/
+.secure_files/
+
+# Local configuration
+local.properties
+secrets.properties
+
+# IDE
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Outputs
+*.apk
+*.aab
+*.ap_
+output-metadata.json
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Signing files
+*.jks
+*.keystore
+
+# Google services
+**/google-services.json
+
+# Profiling
+*.hprof
+
+# Misc
+*.tmp
+*.swp
+*~

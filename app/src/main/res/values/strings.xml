@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Vivaan Enterprise</string>
+    <string name="bootstrap_subtitle">Business Documents</string>
+
+    <!-- Component String Resources -->
+    <string name="nav_back_desc">Navigate back</string>
+    <string name="search_placeholder">Search…</string>
+    <string name="search_icon_desc">Search icon</string>
+    <string name="clear_search_desc">Clear search query</string>
+    <string name="loading_default">Loading…</string>
+    <string name="error_title_default">Something went wrong</string>
+    <string name="retry_action_default">Retry</string>
+    <!-- Authentication String Resources -->
+    <string name="login_title">Sign in to continue</string>
+    <string name="email_label">Email</string>
+    <string name="password_label">Password</string>
+    <string name="sign_in_action">Sign In</string>
+    <string name="password_visibility_toggle">Toggle password visibility</string>
+    
+    <!-- Login Validation Errors -->
+    <string name="error_email_required">Email address is required</string>
+    <string name="error_email_invalid">Please enter a valid email address</string>
+    <string name="error_password_required">Password is required</string>
+    
+    <!-- Auth Error Messages -->
+    <string name="auth_error_invalid_credentials">Invalid email or password. Please check your credentials.</string>
+    <string name="auth_error_network">Network unavailable. Please check your connection and try again.</string>
+    <string name="auth_error_too_many_requests">Too many login attempts. Please try again later.</string>
+    <string name="auth_error_user_disabled">This account has been disabled.</string>
+    <string name="auth_error_generic">Authentication failed. Please try again.</string>
+    
+    <!-- Dashboard String Resources -->
+    <string name="dashboard_welcome">Welcome to Vivaan Enterprise</string>
+    <string name="dashboard_subtitle">Business Documents &amp; Accounts Management</string>
+    <string name="sign_out_action">Sign Out</string>
+    <string name="sign_out_dialog_title">Sign Out</string>
+    <string name="sign_out_dialog_message">Are you sure you want to sign out of Vivaan Enterprise?</string>
+    <string name="confirm_action">Confirm</string>
+    <string name="cancel_action">Cancel</string>
+    <!-- Client Feature String Resources -->
+    <string name="clients_title">Clients</string>
+    <string name="add_client_title">Add Client</string>
+    <string name="edit_client_title">Edit Client</string>
+    <string name="client_detail_title">Client Details</string>
+    <string name="search_clients_placeholder">Search clients by name or GSTIN…</string>
+    <string name="empty_clients_title">No clients found</string>
+    <string name="empty_clients_description">Tap + to add your first client master entry.</string>
+    <string name="empty_search_title">No matching clients</string>
+    <string name="empty_search_description">No client matches your search criteria.</string>
+    <string name="add_client_action">Add Client</string>
+    <string name="edit_action">Edit</string>
+    <string name="delete_action">Delete</string>
+    <string name="save_client_action">Save Client</string>
+
+    <!-- Client Form Fields -->
+    <string name="company_name_label">Company Name *</string>
+    <string name="address_label">Address</string>
+    <string name="gstin_label">GSTIN / UIN</string>
+    <string name="state_label">State</string>
+    <string name="state_code_label">State Code</string>
+    <string name="phone_label">Phone Number</string>
+    <string name="pan_label">PAN</string>
+    <string name="iec_label">Import Export Code (IEC)</string>
+    <string name="other_details_label">Other Details</string>
+
+    <!-- Client Validation Errors -->
+    <string name="error_company_name_required">Company name is required</string>
+    <string name="error_gstin_invalid">Invalid GSTIN format (e.g. 24CHWPG0910J1ZB)</string>
+    <string name="error_pan_invalid">Invalid PAN format (e.g. CHWPG0910J)</string>
+    <string name="error_state_code_invalid">State code must be 2 digits (e.g. 24)</string>
+    <string name="error_phone_invalid">Invalid phone number format</string>
+
+    <!-- Client Actions & Dialogs -->
+    <string name="delete_client_dialog_title">Delete Client</string>
+    <string name="delete_client_dialog_message">Are you sure you want to delete %1$s? This client will be removed from your active client list.</string>
+    <string name="client_saved_success">Client saved successfully</string>
+    <string name="client_deleted_success">Client deleted successfully</string>
+    <string name="error_client_not_found">Client not found</string>
+    <string name="error_saving_client">Unable to save client. Please try again.</string>
+    <string name="error_deleting_client">Unable to delete client. Please try again.</string>
+
+    <!-- Product Feature String Resources -->
+    <string name="products_title">Products</string>
+    <string name="add_product_title">Add Product</string>
+    <string name="edit_product_title">Edit Product</string>
+    <string name="product_detail_title">Product Details</string>
+    <string name="search_products_placeholder">Search products by name or HSN/SAC…</string>
+    <string name="empty_products_title">No products found</string>
+    <string name="empty_products_description">Tap + to add your first product master entry.</string>
+    <string name="empty_product_search_title">No matching products</string>
+    <string name="empty_product_search_description">No product matches your search criteria.</string>
+    <string name="add_product_action">Add Product</string>
+    <string name="save_product_action">Save Product</string>
+    <string name="product_name_label">Product Name *</string>
+    <string name="hsn_sac_label">HSN / SAC *</string>
+    <string name="gst_rate_label">GST Rate (%) *</string>
+    <string name="is_active_label">Active Product</string>
+    <string name="status_active">Active</string>
+    <string name="status_inactive">Inactive</string>
+    <string name="filter_all">All</string>
+    <string name="filter_active">Active</string>
+    <string name="filter_inactive">Inactive</string>
+    <string name="error_product_name_required">Product name is required</string>
+    <string name="error_hsn_sac_required">HSN/SAC code is required</string>
+    <string name="error_gst_rate_invalid">Invalid GST rate (e.g. 18 or 18.25)</string>
+    <string name="delete_product_dialog_title">Delete Product</string>
+    <string name="delete_product_dialog_message">Are you sure you want to delete %1$s? This product will be removed from active product catalog.</string>
+    <string name="product_saved_success">Product saved successfully</string>
+    <string name="product_deleted_success">Product deleted successfully</string>
+    <string name="error_product_not_found">Product not found</string>
+    <string name="error_saving_product">Unable to save product. Please try again.</string>
+    <string name="error_deleting_product">Unable to delete product. Please try again.</string>
+</resources>
+

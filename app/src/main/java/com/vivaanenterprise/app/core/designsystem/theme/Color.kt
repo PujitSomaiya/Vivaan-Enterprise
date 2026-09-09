@@ -1,0 +1,73 @@
+package com.vivaanenterprise.app.core.designsystem.theme
+
+import androidx.compose.ui.graphics.Color
+
+// Light Theme Palette
+val LightPrimary = Color(0xFF334E68)
+val LightOnPrimary = Color(0xFFFFFFFF)
+val LightPrimaryContainer = Color(0xFFD9E2EC)
+val LightOnPrimaryContainer = Color(0xFF102A43)
+val LightSecondary = Color(0xFF486581)
+val LightOnSecondary = Color(0xFFFFFFFF)
+val LightSecondaryContainer = Color(0xFFE9EFF5)
+val LightOnSecondaryContainer = Color(0xFF102A43)
+val LightTertiary = Color(0xFF627D98)
+val LightOnTertiary = Color(0xFFFFFFFF)
+val LightBackground = Color(0xFFF8FAFC)
+val LightOnBackground = Color(0xFF102A43)
+val LightSurface = Color(0xFFFFFFFF)
+val LightOnSurface = Color(0xFF102A43)
+val LightSurfaceVariant = Color(0xFFE9EFF5)
+val LightOnSurfaceVariant = Color(0xFF627D98)
+val LightOutline = Color(0xFFBCCCDC)
+val LightOutlineVariant = Color(0xFFD9E2EC)
+
+val LightError = Color(0xFFD32F2F)
+val LightOnError = Color(0xFFFFFFFF)
+val LightErrorContainer = Color(0xFFFFDAD6)
+val LightOnErrorContainer = Color(0xFF410002)
+
+val LightSuccess = Color(0xFF2E7D32)
+val LightOnSuccess = Color(0xFFFFFFFF)
+val LightSuccessContainer = Color(0xFFC8E6C9)
+val LightOnSuccessContainer = Color(0xFF002204)
+
+val LightWarning = Color(0xFFED6C02)
+val LightOnWarning = Color(0xFFFFFFFF)
+val LightWarningContainer = Color(0xFFFFE0B2)
+val LightOnWarningContainer = Color(0xFF250C00)
+
+// Dark Theme Palette
+val DarkPrimary = Color(0xFF9FB3C8)
+val DarkOnPrimary = Color(0xFF102A43)
+val DarkPrimaryContainer = Color(0xFF243B53)
+val DarkOnPrimaryContainer = Color(0xFFF0F4F8)
+val DarkSecondary = Color(0xFFBCCCDC)
+val DarkOnSecondary = Color(0xFF102A43)
+val DarkSecondaryContainer = Color(0xFF334E68)
+val DarkOnSecondaryContainer = Color(0xFFF0F4F8)
+val DarkTertiary = Color(0xFF829AB1)
+val DarkOnTertiary = Color(0xFF102A43)
+val DarkBackground = Color(0xFF0B1219)
+val DarkOnBackground = Color(0xFFF0F4F8)
+val DarkSurface = Color(0xFF17202A)
+val DarkOnSurface = Color(0xFFF0F4F8)
+val DarkSurfaceVariant = Color(0xFF202B36)
+val DarkOnSurfaceVariant = Color(0xFFBCCCDC)
+val DarkOutline = Color(0xFF486581)
+val DarkOutlineVariant = Color(0xFF243B53)
+
+val DarkError = Color(0xFFF2B8B5)
+val DarkOnError = Color(0xFF601410)
+val DarkErrorContainer = Color(0xFF8C1D18)
+val DarkOnErrorContainer = Color(0xFFF9DEDC)
+
+val DarkSuccess = Color(0xFF81C784)
+val DarkOnSuccess = Color(0xFF00390A)
+val DarkSuccessContainer = Color(0xFF1B5E20)
+val DarkOnSuccessContainer = Color(0xFFC8E6C9)
+
+val DarkWarning = Color(0xFFFFB74D)
+val DarkOnWarning = Color(0xFF4A2800)
+val DarkWarningContainer = Color(0xFFE65100)
+val DarkOnWarningContainer = Color(0xFFFFE0B2)

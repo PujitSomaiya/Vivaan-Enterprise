@@ -1,0 +1,1179 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 3,
+    "identityHash": "ec4b4e019b98c26be5590b10d3ccd18c",
+    "entities": [
+      {
+        "tableName": "business_profiles",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `businessName` TEXT NOT NULL, `addressLine1` TEXT NOT NULL, `addressLine2` TEXT NOT NULL, `cityStatePincode` TEXT NOT NULL, `gstin` TEXT NOT NULL, `mobile` TEXT NOT NULL, `email` TEXT, `pan` TEXT NOT NULL, `bankAccountName` TEXT NOT NULL, `bankName` TEXT NOT NULL, `bankAccountNumber` TEXT NOT NULL, `bankIfsc` TEXT NOT NULL, `bankBranch` TEXT NOT NULL, `declaration` TEXT NOT NULL, `authorisedSignatory` TEXT NOT NULL, `state` TEXT NOT NULL, `stateCode` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `syncStatus` TEXT NOT NULL, `lastSyncedAt` INTEGER, `syncError` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "businessName",
+            "columnName": "businessName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "addressLine1",
+            "columnName": "addressLine1",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "addressLine2",
+            "columnName": "addressLine2",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cityStatePincode",
+            "columnName": "cityStatePincode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gstin",
+            "columnName": "gstin",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mobile",
+            "columnName": "mobile",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "pan",
+            "columnName": "pan",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bankAccountName",
+            "columnName": "bankAccountName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bankName",
+            "columnName": "bankName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bankAccountNumber",
+            "columnName": "bankAccountNumber",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bankIfsc",
+            "columnName": "bankIfsc",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bankBranch",
+            "columnName": "bankBranch",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "declaration",
+            "columnName": "declaration",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "authorisedSignatory",
+            "columnName": "authorisedSignatory",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stateCode",
+            "columnName": "stateCode",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "syncStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSyncedAt",
+            "columnName": "lastSyncedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "syncError",
+            "columnName": "syncError",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "clients",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `companyName` TEXT NOT NULL, `address` TEXT, `gstin` TEXT, `state` TEXT, `stateCode` TEXT, `email` TEXT, `phone` TEXT, `pan` TEXT, `iec` TEXT, `otherDetails` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL, `deletedAt` INTEGER, `syncStatus` TEXT NOT NULL, `lastSyncedAt` INTEGER, `syncError` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "companyName",
+            "columnName": "companyName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "address",
+            "columnName": "address",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "gstin",
+            "columnName": "gstin",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "stateCode",
+            "columnName": "stateCode",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "phone",
+            "columnName": "phone",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "pan",
+            "columnName": "pan",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "iec",
+            "columnName": "iec",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "otherDetails",
+            "columnName": "otherDetails",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isDeleted",
+            "columnName": "isDeleted",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deletedAt",
+            "columnName": "deletedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "syncStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSyncedAt",
+            "columnName": "lastSyncedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "syncError",
+            "columnName": "syncError",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_clients_companyName",
+            "unique": false,
+            "columnNames": [
+              "companyName"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_clients_companyName` ON `${TABLE_NAME}` (`companyName`)"
+          },
+          {
+            "name": "index_clients_updatedAt",
+            "unique": false,
+            "columnNames": [
+              "updatedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_clients_updatedAt` ON `${TABLE_NAME}` (`updatedAt`)"
+          },
+          {
+            "name": "index_clients_syncStatus",
+            "unique": false,
+            "columnNames": [
+              "syncStatus"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_clients_syncStatus` ON `${TABLE_NAME}` (`syncStatus`)"
+          },
+          {
+            "name": "index_clients_isDeleted",
+            "unique": false,
+            "columnNames": [
+              "isDeleted"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_clients_isDeleted` ON `${TABLE_NAME}` (`isDeleted`)"
+          }
+        ]
+      },
+      {
+        "tableName": "products",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `hsnSac` TEXT, `defaultGstRateBasisPoints` INTEGER, `isActive` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL, `deletedAt` INTEGER, `syncStatus` TEXT NOT NULL, `lastSyncedAt` INTEGER, `syncError` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hsnSac",
+            "columnName": "hsnSac",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "defaultGstRateBasisPoints",
+            "columnName": "defaultGstRateBasisPoints",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "isActive",
+            "columnName": "isActive",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isDeleted",
+            "columnName": "isDeleted",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deletedAt",
+            "columnName": "deletedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "syncStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSyncedAt",
+            "columnName": "lastSyncedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "syncError",
+            "columnName": "syncError",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_products_name",
+            "unique": false,
+            "columnNames": [
+              "name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_products_name` ON `${TABLE_NAME}` (`name`)"
+          },
+          {
+            "name": "index_products_isActive",
+            "unique": false,
+            "columnNames": [
+              "isActive"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_products_isActive` ON `${TABLE_NAME}` (`isActive`)"
+          },
+          {
+            "name": "index_products_updatedAt",
+            "unique": false,
+            "columnNames": [
+              "updatedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_products_updatedAt` ON `${TABLE_NAME}` (`updatedAt`)"
+          },
+          {
+            "name": "index_products_syncStatus",
+            "unique": false,
+            "columnNames": [
+              "syncStatus"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_products_syncStatus` ON `${TABLE_NAME}` (`syncStatus`)"
+          },
+          {
+            "name": "index_products_isDeleted",
+            "unique": false,
+            "columnNames": [
+              "isDeleted"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_products_isDeleted` ON `${TABLE_NAME}` (`isDeleted`)"
+          }
+        ]
+      },
+      {
+        "tableName": "business_documents",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `documentType` TEXT NOT NULL, `documentNumber` TEXT NOT NULL, `documentDate` INTEGER NOT NULL, `status` TEXT NOT NULL, `clientId` TEXT NOT NULL, `sellerBusinessNameSnapshot` TEXT, `sellerAddressLine1Snapshot` TEXT, `sellerAddressLine2Snapshot` TEXT, `sellerCityStatePincodeSnapshot` TEXT, `sellerGstinSnapshot` TEXT, `sellerMobileSnapshot` TEXT, `sellerEmailSnapshot` TEXT, `sellerPanSnapshot` TEXT, `sellerBankAccountNameSnapshot` TEXT, `sellerBankNameSnapshot` TEXT, `sellerBankAccountNumberSnapshot` TEXT, `sellerBankIfscSnapshot` TEXT, `sellerBankBranchSnapshot` TEXT, `sellerDeclarationSnapshot` TEXT, `sellerAuthorisedSignatorySnapshot` TEXT, `clientCompanyNameSnapshot` TEXT, `clientAddressSnapshot` TEXT, `clientGstinSnapshot` TEXT, `clientStateSnapshot` TEXT, `clientStateCodeSnapshot` TEXT, `clientEmailSnapshot` TEXT, `clientPhoneSnapshot` TEXT, `clientPanSnapshot` TEXT, `clientIecSnapshot` TEXT, `clientOtherDetailsSnapshot` TEXT, `deliveryNote` TEXT, `deliveryFactoryAddress` TEXT, `paymentTerms` TEXT, `supplierReference` TEXT, `otherReferences` TEXT, `buyerOrderNumber` TEXT, `buyerOrderDate` INTEGER, `dispatchDocumentNumber` TEXT, `deliveryNoteDate` INTEGER, `dispatchThrough` TEXT, `destination` TEXT, `termsOfDelivery` TEXT, `placeOfSupply` TEXT, `taxTreatment` TEXT, `taxableAmountPaise` INTEGER NOT NULL, `cgstAmountPaise` INTEGER NOT NULL, `sgstAmountPaise` INTEGER NOT NULL, `igstAmountPaise` INTEGER NOT NULL, `totalTaxAmountPaise` INTEGER NOT NULL, `grandTotalPaise` INTEGER NOT NULL, `amountInWords` TEXT, `taxAmountInWords` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `finalizedAt` INTEGER, `cancelledAt` INTEGER, `isDeleted` INTEGER NOT NULL, `deletedAt` INTEGER, `syncStatus` TEXT NOT NULL, `lastSyncedAt` INTEGER, `syncError` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "documentType",
+            "columnName": "documentType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "documentNumber",
+            "columnName": "documentNumber",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "documentDate",
+            "columnName": "documentDate",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "clientId",
+            "columnName": "clientId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sellerBusinessNameSnapshot",
+            "columnName": "sellerBusinessNameSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sellerAddressLine1Snapshot",
+            "columnName": "sellerAddressLine1Snapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sellerAddressLine2Snapshot",
+            "columnName": "sellerAddressLine2Snapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sellerCityStatePincodeSnapshot",
+            "columnName": "sellerCityStatePincodeSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sellerGstinSnapshot",
+            "columnName": "sellerGstinSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sellerMobileSnapshot",
+            "columnName": "sellerMobileSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sellerEmailSnapshot",
+            "columnName": "sellerEmailSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sellerPanSnapshot",
+            "columnName": "sellerPanSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sellerBankAccountNameSnapshot",
+            "columnName": "sellerBankAccountNameSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sellerBankNameSnapshot",
+            "columnName": "sellerBankNameSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sellerBankAccountNumberSnapshot",
+            "columnName": "sellerBankAccountNumberSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sellerBankIfscSnapshot",
+            "columnName": "sellerBankIfscSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sellerBankBranchSnapshot",
+            "columnName": "sellerBankBranchSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sellerDeclarationSnapshot",
+            "columnName": "sellerDeclarationSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sellerAuthorisedSignatorySnapshot",
+            "columnName": "sellerAuthorisedSignatorySnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "clientCompanyNameSnapshot",
+            "columnName": "clientCompanyNameSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "clientAddressSnapshot",
+            "columnName": "clientAddressSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "clientGstinSnapshot",
+            "columnName": "clientGstinSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "clientStateSnapshot",
+            "columnName": "clientStateSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "clientStateCodeSnapshot",
+            "columnName": "clientStateCodeSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "clientEmailSnapshot",
+            "columnName": "clientEmailSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "clientPhoneSnapshot",
+            "columnName": "clientPhoneSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "clientPanSnapshot",
+            "columnName": "clientPanSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "clientIecSnapshot",
+            "columnName": "clientIecSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "clientOtherDetailsSnapshot",
+            "columnName": "clientOtherDetailsSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "deliveryNote",
+            "columnName": "deliveryNote",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "deliveryFactoryAddress",
+            "columnName": "deliveryFactoryAddress",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "paymentTerms",
+            "columnName": "paymentTerms",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "supplierReference",
+            "columnName": "supplierReference",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "otherReferences",
+            "columnName": "otherReferences",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "buyerOrderNumber",
+            "columnName": "buyerOrderNumber",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "buyerOrderDate",
+            "columnName": "buyerOrderDate",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "dispatchDocumentNumber",
+            "columnName": "dispatchDocumentNumber",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "deliveryNoteDate",
+            "columnName": "deliveryNoteDate",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "dispatchThrough",
+            "columnName": "dispatchThrough",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "destination",
+            "columnName": "destination",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "termsOfDelivery",
+            "columnName": "termsOfDelivery",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "placeOfSupply",
+            "columnName": "placeOfSupply",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "taxTreatment",
+            "columnName": "taxTreatment",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "taxableAmountPaise",
+            "columnName": "taxableAmountPaise",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cgstAmountPaise",
+            "columnName": "cgstAmountPaise",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sgstAmountPaise",
+            "columnName": "sgstAmountPaise",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "igstAmountPaise",
+            "columnName": "igstAmountPaise",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalTaxAmountPaise",
+            "columnName": "totalTaxAmountPaise",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "grandTotalPaise",
+            "columnName": "grandTotalPaise",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amountInWords",
+            "columnName": "amountInWords",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "taxAmountInWords",
+            "columnName": "taxAmountInWords",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "finalizedAt",
+            "columnName": "finalizedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "cancelledAt",
+            "columnName": "cancelledAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "isDeleted",
+            "columnName": "isDeleted",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deletedAt",
+            "columnName": "deletedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "syncStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSyncedAt",
+            "columnName": "lastSyncedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "syncError",
+            "columnName": "syncError",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_business_documents_documentType",
+            "unique": false,
+            "columnNames": [
+              "documentType"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_business_documents_documentType` ON `${TABLE_NAME}` (`documentType`)"
+          },
+          {
+            "name": "index_business_documents_documentDate",
+            "unique": false,
+            "columnNames": [
+              "documentDate"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_business_documents_documentDate` ON `${TABLE_NAME}` (`documentDate`)"
+          },
+          {
+            "name": "index_business_documents_clientId",
+            "unique": false,
+            "columnNames": [
+              "clientId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_business_documents_clientId` ON `${TABLE_NAME}` (`clientId`)"
+          },
+          {
+            "name": "index_business_documents_status",
+            "unique": false,
+            "columnNames": [
+              "status"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_business_documents_status` ON `${TABLE_NAME}` (`status`)"
+          },
+          {
+            "name": "index_business_documents_updatedAt",
+            "unique": false,
+            "columnNames": [
+              "updatedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_business_documents_updatedAt` ON `${TABLE_NAME}` (`updatedAt`)"
+          },
+          {
+            "name": "index_business_documents_syncStatus",
+            "unique": false,
+            "columnNames": [
+              "syncStatus"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_business_documents_syncStatus` ON `${TABLE_NAME}` (`syncStatus`)"
+          },
+          {
+            "name": "index_business_documents_isDeleted",
+            "unique": false,
+            "columnNames": [
+              "isDeleted"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_business_documents_isDeleted` ON `${TABLE_NAME}` (`isDeleted`)"
+          }
+        ]
+      },
+      {
+        "tableName": "document_line_items",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `documentId` TEXT NOT NULL, `productId` TEXT, `position` INTEGER NOT NULL, `descriptionSnapshot` TEXT NOT NULL, `hsnSacSnapshot` TEXT, `quantity` INTEGER NOT NULL, `ratePaise` INTEGER NOT NULL, `gstRateBasisPoints` INTEGER NOT NULL, `taxableAmountPaise` INTEGER NOT NULL, `cgstAmountPaise` INTEGER NOT NULL, `sgstAmountPaise` INTEGER NOT NULL, `igstAmountPaise` INTEGER NOT NULL, `totalTaxPaise` INTEGER NOT NULL, `lineTotalPaise` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`documentId`) REFERENCES `business_documents`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "documentId",
+            "columnName": "documentId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "productId",
+            "columnName": "productId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descriptionSnapshot",
+            "columnName": "descriptionSnapshot",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hsnSacSnapshot",
+            "columnName": "hsnSacSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "quantity",
+            "columnName": "quantity",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ratePaise",
+            "columnName": "ratePaise",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gstRateBasisPoints",
+            "columnName": "gstRateBasisPoints",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "taxableAmountPaise",
+            "columnName": "taxableAmountPaise",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cgstAmountPaise",
+            "columnName": "cgstAmountPaise",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sgstAmountPaise",
+            "columnName": "sgstAmountPaise",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "igstAmountPaise",
+            "columnName": "igstAmountPaise",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalTaxPaise",
+            "columnName": "totalTaxPaise",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lineTotalPaise",
+            "columnName": "lineTotalPaise",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_document_line_items_documentId",
+            "unique": false,
+            "columnNames": [
+              "documentId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_document_line_items_documentId` ON `${TABLE_NAME}` (`documentId`)"
+          },
+          {
+            "name": "index_document_line_items_documentId_position",
+            "unique": false,
+            "columnNames": [
+              "documentId",
+              "position"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_document_line_items_documentId_position` ON `${TABLE_NAME}` (`documentId`, `position`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "business_documents",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "documentId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "client_account_entries",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `clientId` TEXT NOT NULL, `documentId` TEXT, `entryType` TEXT NOT NULL, `entryDate` INTEGER NOT NULL, `amountPaise` INTEGER NOT NULL, `narration` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL, `deletedAt` INTEGER, `syncStatus` TEXT NOT NULL, `lastSyncedAt` INTEGER, `syncError` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`clientId`) REFERENCES `clients`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`documentId`) REFERENCES `business_documents`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "clientId",
+            "columnName": "clientId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "documentId",
+            "columnName": "documentId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "entryType",
+            "columnName": "entryType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entryDate",
+            "columnName": "entryDate",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amountPaise",
+            "columnName": "amountPaise",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "narration",
+            "columnName": "narration",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isDeleted",
+            "columnName": "isDeleted",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deletedAt",
+            "columnName": "deletedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "syncStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSyncedAt",
+            "columnName": "lastSyncedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "syncError",
+            "columnName": "syncError",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_client_account_entries_clientId",
+            "unique": false,
+            "columnNames": [
+              "clientId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_client_account_entries_clientId` ON `${TABLE_NAME}` (`clientId`)"
+          },
+          {
+            "name": "index_client_account_entries_entryDate",
+            "unique": false,
+            "columnNames": [
+              "entryDate"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_client_account_entries_entryDate` ON `${TABLE_NAME}` (`entryDate`)"
+          },
+          {
+            "name": "index_client_account_entries_documentId",
+            "unique": false,
+            "columnNames": [
+              "documentId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_client_account_entries_documentId` ON `${TABLE_NAME}` (`documentId`)"
+          },
+          {
+            "name": "index_client_account_entries_syncStatus",
+            "unique": false,
+            "columnNames": [
+              "syncStatus"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_client_account_entries_syncStatus` ON `${TABLE_NAME}` (`syncStatus`)"
+          },
+          {
+            "name": "index_client_account_entries_isDeleted",
+            "unique": false,
+            "columnNames": [
+              "isDeleted"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_client_account_entries_isDeleted` ON `${TABLE_NAME}` (`isDeleted`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "clients",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "clientId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "business_documents",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "documentId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "document_sequences",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`documentType` TEXT NOT NULL, `financialYear` TEXT NOT NULL, `lastSequenceNumber` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`documentType`, `financialYear`))",
+        "fields": [
+          {
+            "fieldPath": "documentType",
+            "columnName": "documentType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "financialYear",
+            "columnName": "financialYear",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSequenceNumber",
+            "columnName": "lastSequenceNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "documentType",
+            "financialYear"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'ec4b4e019b98c26be5590b10d3ccd18c')"
+    ]
+  }
+}
