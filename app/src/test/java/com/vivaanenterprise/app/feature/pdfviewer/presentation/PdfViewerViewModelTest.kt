@@ -289,7 +289,7 @@ class PdfViewerViewModelTest {
         override fun getPackageName(): String = "com.vivaanenterprise.app"
     }
 
-    private class FakePdfCacheManager : PdfCacheManager(context = TestContext()) {
+    private class FakePdfCacheManager : PdfCacheManager(context = TestContext(), sanitizer = PdfFilenameSanitizer()) {
         override suspend fun writePdfToCache(documentId: String, pdfBytes: ByteArray): File {
             val file = File.createTempFile("fake_cache_", ".pdf")
             file.writeBytes(pdfBytes)

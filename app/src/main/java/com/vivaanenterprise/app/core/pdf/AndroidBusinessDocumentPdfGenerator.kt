@@ -403,6 +403,176 @@ class AndroidBusinessDocumentPdfGenerator @Inject constructor(
         ctx.canvas.drawRect(leftX, startY, rightX, startY + boxHeight, ctx.paintLine)
 
         ctx.currentY = startY + boxHeight
+
+        // 8. Tax Summary Table & Tax Amount (in words)
+        drawTaxSummaryTable(ctx, doc, isInterstate)
+    }
+
+    private fun drawTaxSummaryTable(
+        ctx: PdfPageContext,
+        doc: BusinessDocument,
+        isInterstate: Boolean
+    ) {
+        val leftX = PdfPageContext.MARGIN_LEFT
+        val rightX = PdfPageContext.MARGIN_RIGHT
+        val tableWidth = PdfPageContext.CONTENT_WIDTH
+
+        // Group line items by HSN/SAC
+        val groupedLines = doc.lineItems.groupBy { it.hsnSacSnapshot ?: "" }
+        val numRows = groupedLines.size
+        val estimatedHeight = 36f + (numRows * 18f) + 30f
+
+        ctx.ensureSpace(estimatedHeight)
+
+        val startY = ctx.currentY
+        val headerHeight = 18f
+
+        // Subheader Banner
+        ctx.canvas.drawRect(leftX, startY, rightX, startY + headerHeight, ctx.paintFillHeader)
+        ctx.canvas.drawRect(leftX, startY, rightX, startY + headerHeight, ctx.paintLine)
+
+        if (isInterstate) {
+            val colHsn = 115f
+            val colTaxable = 140f
+            val colIgstRate = 80f
+            val colIgstAmt = 100f
+            val colTotalTax = tableWidth - (colHsn + colTaxable + colIgstRate + colIgstAmt)
+
+            val xHsn = leftX
+            val xTaxable = xHsn + colHsn
+            val xRate = xTaxable + colTaxable
+            val xAmt = xRate + colIgstRate
+            val xTotal = xAmt + colIgstAmt
+
+            val drawHeaders = {
+                val hY = ctx.currentY
+                ctx.canvas.drawRect(leftX, hY, rightX, hY + headerHeight, ctx.paintFillHeader)
+                ctx.canvas.drawRect(leftX, hY, rightX, hY + headerHeight, ctx.paintLine)
+
+                ctx.drawTextCentered("HSN/SAC", xHsn + colHsn / 2f, hY + 12f, ctx.textPaintHeaderLabel)
+                ctx.drawTextRightAligned("Taxable Value", xTaxable + colTaxable - 4f, hY + 12f, ctx.textPaintHeaderLabel)
+                ctx.drawTextRightAligned("IGST Rate", xRate + colIgstRate - 4f, hY + 12f, ctx.textPaintHeaderLabel)
+                ctx.drawTextRightAligned("IGST Amt", xAmt + colIgstAmt - 4f, hY + 12f, ctx.textPaintHeaderLabel)
+                ctx.drawTextRightAligned("Total Tax", rightX - 4f, hY + 12f, ctx.textPaintHeaderLabel)
+
+                ctx.canvas.drawLine(xTaxable, hY, xTaxable, hY + headerHeight, ctx.paintLine)
+                ctx.canvas.drawLine(xRate, hY, xRate, hY + headerHeight, ctx.paintLine)
+                ctx.canvas.drawLine(xAmt, hY, xAmt, hY + headerHeight, ctx.paintLine)
+                ctx.canvas.drawLine(xTotal, hY, xTotal, hY + headerHeight, ctx.paintLine)
+
+                ctx.currentY = hY + headerHeight
+            }
+
+            drawHeaders()
+
+            groupedLines.forEach { (hsn, lines) ->
+                val taxableSum = lines.fold(0L) { acc, item -> acc + item.taxableAmountPaise }
+                val igstSum = lines.fold(0L) { acc, item -> acc + item.igstAmountPaise }
+                val totalTaxSum = lines.fold(0L) { acc, item -> acc + item.totalTaxPaise }
+                val rateStr = lines.firstOrNull()?.let { PdfFormattingUtils.formatGstRateBasisPoints(it.gstRateBasisPoints) } ?: "0%"
+
+                ctx.ensureSpace(18f, onNewPageHeader = drawHeaders)
+                val rowY = ctx.currentY
+                val textY = rowY + 12f
+
+                ctx.drawTextCentered(hsn, xHsn + colHsn / 2f, textY, ctx.textPaintRegular)
+                ctx.drawTextRightAligned(PdfFormattingUtils.formatPaiseToCurrency(taxableSum), xTaxable + colTaxable - 4f, textY, ctx.textPaintRegular)
+                ctx.drawTextRightAligned(rateStr, xRate + colIgstRate - 4f, textY, ctx.textPaintRegular)
+                ctx.drawTextRightAligned(PdfFormattingUtils.formatPaiseToCurrency(igstSum), xAmt + colIgstAmt - 4f, textY, ctx.textPaintRegular)
+                ctx.drawTextRightAligned(PdfFormattingUtils.formatPaiseToCurrency(totalTaxSum), rightX - 4f, textY, ctx.textPaintRegular)
+
+                ctx.canvas.drawRect(leftX, rowY, rightX, rowY + 18f, ctx.paintLine)
+                ctx.canvas.drawLine(xTaxable, rowY, xTaxable, rowY + 18f, ctx.paintLine)
+                ctx.canvas.drawLine(xRate, rowY, xRate, rowY + 18f, ctx.paintLine)
+                ctx.canvas.drawLine(xAmt, rowY, xAmt, rowY + 18f, ctx.paintLine)
+                ctx.canvas.drawLine(xTotal, rowY, xTotal, rowY + 18f, ctx.paintLine)
+
+                ctx.currentY = rowY + 18f
+            }
+        } else { // INTRA_STATE (CGST + SGST)
+            val colHsn = 85f
+            val colTaxable = 110f
+            val colCgstRate = 55f
+            val colCgstAmt = 75f
+            val colSgstRate = 55f
+            val colSgstAmt = 75f
+            val colTotalTax = tableWidth - (colHsn + colTaxable + colCgstRate + colCgstAmt + colSgstRate + colSgstAmt)
+
+            val xHsn = leftX
+            val xTaxable = xHsn + colHsn
+            val xCgstRate = xTaxable + colTaxable
+            val xCgstAmt = xCgstRate + colCgstRate
+            val xSgstRate = xCgstAmt + colCgstAmt
+            val xSgstAmt = xSgstRate + colSgstRate
+            val xTotal = xSgstAmt + colSgstAmt
+
+            val drawHeaders = {
+                val hY = ctx.currentY
+                ctx.canvas.drawRect(leftX, hY, rightX, hY + headerHeight, ctx.paintFillHeader)
+                ctx.canvas.drawRect(leftX, hY, rightX, hY + headerHeight, ctx.paintLine)
+
+                ctx.drawTextCentered("HSN/SAC", xHsn + colHsn / 2f, hY + 12f, ctx.textPaintHeaderLabel)
+                ctx.drawTextRightAligned("Taxable Value", xTaxable + colTaxable - 4f, hY + 12f, ctx.textPaintHeaderLabel)
+                ctx.drawTextRightAligned("CGST Rate", xCgstRate + colCgstRate - 4f, hY + 12f, ctx.textPaintHeaderLabel)
+                ctx.drawTextRightAligned("CGST Amt", xCgstAmt + colCgstAmt - 4f, hY + 12f, ctx.textPaintHeaderLabel)
+                ctx.drawTextRightAligned("SGST Rate", xSgstRate + colSgstRate - 4f, hY + 12f, ctx.textPaintHeaderLabel)
+                ctx.drawTextRightAligned("SGST Amt", xSgstAmt + colSgstAmt - 4f, hY + 12f, ctx.textPaintHeaderLabel)
+                ctx.drawTextRightAligned("Total Tax", rightX - 4f, hY + 12f, ctx.textPaintHeaderLabel)
+
+                ctx.canvas.drawLine(xTaxable, hY, xTaxable, hY + headerHeight, ctx.paintLine)
+                ctx.canvas.drawLine(xCgstRate, hY, xCgstRate, hY + headerHeight, ctx.paintLine)
+                ctx.canvas.drawLine(xCgstAmt, hY, xCgstAmt, hY + headerHeight, ctx.paintLine)
+                ctx.canvas.drawLine(xSgstRate, hY, xSgstRate, hY + headerHeight, ctx.paintLine)
+                ctx.canvas.drawLine(xSgstAmt, hY, xSgstAmt, hY + headerHeight, ctx.paintLine)
+                ctx.canvas.drawLine(xTotal, hY, xTotal, hY + headerHeight, ctx.paintLine)
+
+                ctx.currentY = hY + headerHeight
+            }
+
+            drawHeaders()
+
+            groupedLines.forEach { (hsn, lines) ->
+                val taxableSum = lines.fold(0L) { acc, item -> acc + item.taxableAmountPaise }
+                val cgstSum = lines.fold(0L) { acc, item -> acc + item.cgstAmountPaise }
+                val sgstSum = lines.fold(0L) { acc, item -> acc + item.sgstAmountPaise }
+                val totalTaxSum = lines.fold(0L) { acc, item -> acc + item.totalTaxPaise }
+                val halfRateBasis = (lines.firstOrNull()?.gstRateBasisPoints ?: 0) / 2
+                val rateStr = PdfFormattingUtils.formatGstRateBasisPoints(halfRateBasis)
+
+                ctx.ensureSpace(18f, onNewPageHeader = drawHeaders)
+                val rowY = ctx.currentY
+                val textY = rowY + 12f
+
+                ctx.drawTextCentered(hsn, xHsn + colHsn / 2f, textY, ctx.textPaintRegular)
+                ctx.drawTextRightAligned(PdfFormattingUtils.formatPaiseToCurrency(taxableSum), xTaxable + colTaxable - 4f, textY, ctx.textPaintRegular)
+                ctx.drawTextRightAligned(rateStr, xCgstRate + colCgstRate - 4f, textY, ctx.textPaintRegular)
+                ctx.drawTextRightAligned(PdfFormattingUtils.formatPaiseToCurrency(cgstSum), xCgstAmt + colCgstAmt - 4f, textY, ctx.textPaintRegular)
+                ctx.drawTextRightAligned(rateStr, xSgstRate + colSgstRate - 4f, textY, ctx.textPaintRegular)
+                ctx.drawTextRightAligned(PdfFormattingUtils.formatPaiseToCurrency(sgstSum), xSgstAmt + colSgstAmt - 4f, textY, ctx.textPaintRegular)
+                ctx.drawTextRightAligned(PdfFormattingUtils.formatPaiseToCurrency(totalTaxSum), rightX - 4f, textY, ctx.textPaintRegular)
+
+                ctx.canvas.drawRect(leftX, rowY, rightX, rowY + 18f, ctx.paintLine)
+                ctx.canvas.drawLine(xTaxable, rowY, xTaxable, rowY + 18f, ctx.paintLine)
+                ctx.canvas.drawLine(xCgstRate, rowY, xCgstRate, rowY + 18f, ctx.paintLine)
+                ctx.canvas.drawLine(xCgstAmt, rowY, xCgstAmt, rowY + 18f, ctx.paintLine)
+                ctx.canvas.drawLine(xSgstRate, rowY, xSgstRate, rowY + 18f, ctx.paintLine)
+                ctx.canvas.drawLine(xSgstAmt, rowY, xSgstAmt, rowY + 18f, ctx.paintLine)
+                ctx.canvas.drawLine(xTotal, rowY, xTotal, rowY + 18f, ctx.paintLine)
+
+                ctx.currentY = rowY + 18f
+            }
+        }
+
+        // Tax Amount in Words Box
+        val taxWords = doc.taxAmountInWords ?: currencyFormatter.formatAmountInWords(doc.totalTaxAmountPaise)
+        val wordBoxStartY = ctx.currentY
+        val wordTextY = wordBoxStartY + 12f
+
+        ctx.drawText("Tax Amount (in words): $taxWords", leftX + 8f, wordTextY, ctx.textPaintBold)
+
+        val wordBoxHeight = 18f
+        ctx.canvas.drawRect(leftX, wordBoxStartY, rightX, wordBoxStartY + wordBoxHeight, ctx.paintLine)
+        ctx.currentY = wordBoxStartY + wordBoxHeight
     }
 
     private fun drawBankAndDeclarationBlock(

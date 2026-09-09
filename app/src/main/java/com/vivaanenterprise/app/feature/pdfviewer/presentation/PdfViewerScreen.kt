@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
@@ -30,11 +31,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -203,13 +208,35 @@ fun PdfViewerScreen(
                                     .padding(horizontal = 16.dp, vertical = 8.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
+                                var scale by remember { mutableStateOf(1f) }
+                                var offsetX by remember { mutableStateOf(0f) }
+                                var offsetY by remember { mutableStateOf(0f) }
+
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .aspectRatio(595f / 842f)
                                         .semantics {
                                             contentDescription = "Page ${index + 1} of ${uiState.pageCount}"
-                                        },
+                                        }
+                                        .pointerInput(Unit) {
+                                            detectTransformGestures { _, pan, zoom, _ ->
+                                                scale = (scale * zoom).coerceIn(1f, 4f)
+                                                if (scale > 1f) {
+                                                    offsetX += pan.x
+                                                    offsetY += pan.y
+                                                } else {
+                                                    offsetX = 0f
+                                                    offsetY = 0f
+                                                }
+                                            }
+                                        }
+                                        .graphicsLayer(
+                                            scaleX = scale,
+                                            scaleY = scale,
+                                            translationX = offsetX,
+                                            translationY = offsetY
+                                        ),
                                     shape = RoundedCornerShape(2.dp),
                                     colors = CardDefaults.cardColors(containerColor = Color.White),
                                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
