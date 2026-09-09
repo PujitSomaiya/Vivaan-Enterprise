@@ -54,6 +54,7 @@ import com.vivaanenterprise.app.feature.document.presentation.components.Documen
 import com.vivaanenterprise.app.feature.document.presentation.components.DocumentCalculationSummary
 import com.vivaanenterprise.app.feature.document.presentation.components.DocumentLineItemCard
 import com.vivaanenterprise.app.feature.document.presentation.components.PlaceOfSupplyBottomSheet
+import com.vivaanenterprise.app.feature.purchaseorder.presentation.PurchaseOrderUiIntent
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -225,6 +226,15 @@ fun InvoiceScreen(
                         .padding(horizontal = AppTheme.spacing.md),
                     verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.md)
                 ) {
+                    item {
+                        uiState.generalError?.let { err ->
+                            AppErrorState(
+                                message = err,
+                                onRetryClick = { onIntent(InvoiceUiIntent.OnClearGeneralError) },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
                     item {
                         Spacer(modifier = Modifier.height(AppTheme.spacing.xs))
                         AppSectionHeader(title = "Header Information")
