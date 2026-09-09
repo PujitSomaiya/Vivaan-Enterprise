@@ -1,7 +1,7 @@
 package com.vivaanenterprise.app.feature.purchaseorder.presentation
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,21 +11,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -41,11 +36,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vivaanenterprise.app.R
-import com.vivaanenterprise.app.core.designsystem.component.AppCard
 import com.vivaanenterprise.app.core.designsystem.component.AppErrorState
 import com.vivaanenterprise.app.core.designsystem.component.AppLoadingState
 import com.vivaanenterprise.app.core.designsystem.component.AppPrimaryButton
@@ -62,16 +55,15 @@ import com.vivaanenterprise.app.domain.model.DocumentLineCalculation
 import com.vivaanenterprise.app.domain.model.IndianState
 import com.vivaanenterprise.app.domain.model.Product
 import com.vivaanenterprise.app.domain.model.TaxTreatment
-import com.vivaanenterprise.app.domain.util.IndianCurrencyFormatter
-import com.vivaanenterprise.app.feature.invoice.presentation.InvoiceLineUiState
-import com.vivaanenterprise.app.feature.invoice.presentation.components.ClientSelectorBottomSheet
-import com.vivaanenterprise.app.feature.invoice.presentation.components.InvoiceLineItemCard
-import com.vivaanenterprise.app.feature.invoice.presentation.components.PlaceOfSupplyBottomSheet
-import com.vivaanenterprise.app.feature.invoice.presentation.components.ProductSelectorBottomSheet
+import com.vivaanenterprise.app.feature.document.presentation.components.ClientSelectorBottomSheet
+import com.vivaanenterprise.app.feature.document.presentation.components.DocumentAdditionalDetailsSection
+import com.vivaanenterprise.app.feature.document.presentation.components.DocumentCalculationSummary
+import com.vivaanenterprise.app.feature.document.presentation.components.DocumentLineItemCard
+import com.vivaanenterprise.app.feature.document.presentation.components.PlaceOfSupplyBottomSheet
+import com.vivaanenterprise.app.feature.document.presentation.model.DocumentLineUiState
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.TimeZone
 
 @Composable
 fun PurchaseOrderRoute(
@@ -121,7 +113,6 @@ fun PurchaseOrderScreen(
     var showDatePickerDialog by remember { mutableStateOf(false) }
     var showClientSheet by remember { mutableStateOf(false) }
     var showPosSheet by remember { mutableStateOf(false) }
-    var selectingProductForLineId by remember { mutableStateOf<String?>(null) }
     var isMetadataExpanded by remember { mutableStateOf(false) }
 
     fun handleBackAttempt() {
@@ -235,19 +226,6 @@ fun PurchaseOrderScreen(
         )
     }
 
-    selectingProductForLineId?.let { lineId ->
-        val currentLine = uiState.lineItems.find { it.id == lineId }
-        ProductSelectorBottomSheet(
-            products = uiState.availableProducts,
-            selectedProduct = currentLine?.selectedProduct,
-            onSelectProduct = { product ->
-                selectingProductForLineId = null
-                onIntent(PurchaseOrderUiIntent.OnSelectProduct(lineId, product))
-            },
-            onDismiss = { selectingProductForLineId = null }
-        )
-    }
-
     val title = if (uiState.mode == PurchaseOrderMode.NEW) "New Purchase Order" else "Edit Purchase Order Draft"
 
     AppScaffold(
@@ -272,369 +250,241 @@ fun PurchaseOrderScreen(
                 )
             }
             else -> {
-                val scrollState = rememberScrollState()
-
-                Column(
+                LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-                        .verticalScroll(scrollState)
-                        .padding(AppTheme.spacing.md),
+                        .padding(horizontal = AppTheme.spacing.md),
                     verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.md)
                 ) {
-                    uiState.generalError?.let { err ->
-                        AppErrorState(
-                            message = err,
-                            onRetryClick = { onIntent(PurchaseOrderUiIntent.OnClearGeneralError) },
+                    item {
+                        uiState.generalError?.let { err ->
+                            AppErrorState(
+                                message = err,
+                                onRetryClick = { onIntent(PurchaseOrderUiIntent.OnClearGeneralError) },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(AppTheme.spacing.xs))
+                        AppSectionHeader(title = "Header Information")
+
+                        Spacer(modifier = Modifier.height(AppTheme.spacing.xs))
+
+                        // PO Number
+                        AppTextField(
+                            value = uiState.documentNumber,
+                            onValueChange = { onIntent(PurchaseOrderUiIntent.OnDocumentNumberChange(it)) },
+                            label = "PO Number *",
+                            errorText = uiState.documentNumberError,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(modifier = Modifier.height(AppTheme.spacing.sm))
+
+                        // PO Date
+                        val formattedDate = remember(uiState.documentDate) {
+                            SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(uiState.documentDate))
+                        }
+                        AppTextField(
+                            value = formattedDate,
+                            onValueChange = {},
+                            label = "PO Date *",
+                            readOnly = true,
+                            trailingIcon = {
+                                Text(
+                                    text = "Change",
+                                    style = AppTheme.typography.labelMedium,
+                                    color = AppTheme.colorScheme.primary,
+                                    modifier = Modifier
+                                        .padding(end = AppTheme.spacing.xs)
+                                        .clickable { showDatePickerDialog = true }
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showDatePickerDialog = true }
+                        )
+
+                        Spacer(modifier = Modifier.height(AppTheme.spacing.sm))
+
+                        // Supplier / Client Picker
+                        AppTextField(
+                            value = uiState.selectedClient?.companyName ?: "",
+                            onValueChange = {},
+                            label = "Supplier / Client *",
+                            readOnly = true,
+                            errorText = uiState.clientError,
+                            trailingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardArrowDown,
+                                    contentDescription = "Select Supplier / Client",
+                                    modifier = Modifier.clickable { showClientSheet = true }
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showClientSheet = true }
+                        )
+
+                        Spacer(modifier = Modifier.height(AppTheme.spacing.sm))
+
+                        // Delivery / Factory Address (PO specific)
+                        AppTextField(
+                            value = uiState.deliveryFactoryAddress,
+                            onValueChange = { onIntent(PurchaseOrderUiIntent.OnDeliveryFactoryAddressChange(it)) },
+                            label = "Delivery / Factory Address",
+                            errorText = uiState.deliveryFactoryAddressError,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(modifier = Modifier.height(AppTheme.spacing.sm))
+
+                        // Place of Supply Picker
+                        val posState = remember(uiState.placeOfSupplyStateCode) {
+                            IndianState.findByCode(uiState.placeOfSupplyStateCode)
+                        }
+                        val posDisplayText = posState?.displayName ?: "State Code: ${uiState.placeOfSupplyStateCode}"
+
+                        AppTextField(
+                            value = posDisplayText,
+                            onValueChange = {},
+                            label = "Place of Supply *",
+                            readOnly = true,
+                            errorText = uiState.placeOfSupplyError,
+                            trailingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardArrowDown,
+                                    contentDescription = "Select Place of Supply",
+                                    modifier = Modifier.clickable { showPosSheet = true }
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showPosSheet = true }
+                        )
+                    }
+
+                    // Line Items Section Header
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            Box(modifier = Modifier.weight(1f)) {
+                                AppSectionHeader(title = "Line Items")
+                            }
+                            TextButton(onClick = { onIntent(PurchaseOrderUiIntent.OnAddLineItem) }) {
+                                Icon(imageVector = Icons.Default.Add, contentDescription = null)
+                                Spacer(modifier = Modifier.padding(horizontal = AppTheme.spacing.xxs))
+                                Text(text = "Add Item")
+                            }
+                        }
+                    }
+
+                    // Line Items List
+                    itemsIndexed(
+                        items = uiState.lineItems,
+                        key = { _, item -> item.id }
+                    ) { index, line ->
+                        val lineCalc = uiState.calculationPreview?.lineCalculations?.find { it.lineItemId == line.id }
+                        DocumentLineItemCard(
+                            position = index + 1,
+                            lineState = line,
+                            lineCalc = lineCalc,
+                            availableProducts = uiState.availableProducts,
+                            onSelectProduct = { prod -> onIntent(PurchaseOrderUiIntent.OnSelectProduct(line.id, prod)) },
+                            onQuantityChange = { qty -> onIntent(PurchaseOrderUiIntent.OnQuantityChange(line.id, qty)) },
+                            onRateChange = { rate -> onIntent(PurchaseOrderUiIntent.OnRateChange(line.id, rate)) },
+                            onRemoveLine = { onIntent(PurchaseOrderUiIntent.OnRemoveLineItem(line.id)) },
+                            canRemove = uiState.lineItems.size > 1,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
 
-                    // Document Header Card
-                    AppCard(modifier = Modifier.fillMaxWidth()) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(AppTheme.spacing.md),
-                            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)
+                    // Live Tax Calculation Summary Section
+                    item {
+                        DocumentCalculationSummary(preview = uiState.calculationPreview)
+                    }
+
+                    // Optional PO Metadata Section
+                    item {
+                        DocumentAdditionalDetailsSection(
+                            expanded = isMetadataExpanded,
+                            onExpandedChange = { isMetadataExpanded = it }
                         ) {
-                            AppSectionHeader(title = "PO Header & Date")
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)
-                            ) {
-                                AppTextField(
-                                    value = uiState.documentNumber,
-                                    onValueChange = { onIntent(PurchaseOrderUiIntent.OnDocumentNumberChange(it)) },
-                                    label = "PO Number",
-                                    errorText = uiState.documentNumberError,
-                                    modifier = Modifier.weight(1f)
-                                )
-
-                                val sdf = remember {
-                                    SimpleDateFormat("dd-MMM-yyyy", Locale.ENGLISH).apply {
-                                        timeZone = TimeZone.getTimeZone("Asia/Kolkata")
-                                    }
-                                }
-                                val formattedDate = sdf.format(Date(uiState.documentDate))
-
-                                AppTextField(
-                                    value = formattedDate,
-                                    onValueChange = {},
-                                    readOnly = true,
-                                    label = "PO Date",
-                                    trailingIcon = {
-                                        IconButton(onClick = { showDatePickerDialog = true }) {
-                                            Icon(Icons.Default.DateRange, contentDescription = "Select Date")
-                                        }
-                                    },
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
+                            AppTextField(
+                                value = uiState.paymentTerms,
+                                onValueChange = { onIntent(PurchaseOrderUiIntent.OnMetadataChange(paymentTerms = it)) },
+                                label = "Mode / Terms of Payment",
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            AppTextField(
+                                value = uiState.supplierReference,
+                                onValueChange = { onIntent(PurchaseOrderUiIntent.OnMetadataChange(supplierReference = it)) },
+                                label = "Supplier Reference",
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            AppTextField(
+                                value = uiState.otherReferences,
+                                onValueChange = { onIntent(PurchaseOrderUiIntent.OnMetadataChange(otherReferences = it)) },
+                                label = "Other Reference(s)",
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            AppTextField(
+                                value = uiState.dispatchThrough,
+                                onValueChange = { onIntent(PurchaseOrderUiIntent.OnMetadataChange(dispatchThrough = it)) },
+                                label = "Dispatch Through",
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            AppTextField(
+                                value = uiState.destination,
+                                onValueChange = { onIntent(PurchaseOrderUiIntent.OnMetadataChange(destination = it)) },
+                                label = "Destination",
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            AppTextField(
+                                value = uiState.termsOfDelivery,
+                                onValueChange = { onIntent(PurchaseOrderUiIntent.OnMetadataChange(termsOfDelivery = it)) },
+                                label = "Terms of Delivery",
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         }
                     }
 
-                    // Supplier / Vendor & Delivery Address Card
-                    AppCard(modifier = Modifier.fillMaxWidth()) {
+                    // Action Buttons (Save Draft & Finalize PO)
+                    item {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(AppTheme.spacing.md),
+                                .padding(vertical = AppTheme.spacing.md),
                             verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)
                         ) {
-                            AppSectionHeader(title = "Supplier & Delivery Information")
-
-                            OutlinedCard(
-                                onClick = { showClientSheet = true },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(modifier = Modifier.padding(AppTheme.spacing.md)) {
-                                    Text(
-                                        text = "Supplier / Client",
-                                        style = AppTheme.typography.labelMedium,
-                                        color = AppTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = uiState.selectedClient?.companyName ?: "Tap to select supplier/client",
-                                        style = AppTheme.typography.titleMedium,
-                                        color = if (uiState.selectedClient != null) AppTheme.colorScheme.onSurface else AppTheme.colorScheme.outline
-                                    )
-                                    uiState.selectedClient?.let { c ->
-                                        Text(
-                                            text = "GSTIN: ${c.gstin ?: "N/A"} | State: ${c.state ?: "N/A"} (${c.stateCode ?: "--"})",
-                                            style = AppTheme.typography.bodySmall,
-                                            color = AppTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                            }
-                            uiState.clientError?.let { err ->
-                                Text(text = err, style = AppTheme.typography.bodySmall, color = AppTheme.colorScheme.error)
-                            }
-
-                            AppTextField(
-                                value = uiState.deliveryFactoryAddress,
-                                onValueChange = { onIntent(PurchaseOrderUiIntent.OnDeliveryFactoryAddressChange(it)) },
-                                label = "Delivery / Factory Address",
-                                errorText = uiState.deliveryFactoryAddressError,
+                            AppPrimaryButton(
+                                text = "Finalize PO",
+                                onClick = { onIntent(PurchaseOrderUiIntent.OnRequestFinalize) },
+                                isLoading = uiState.isFinalizing,
+                                enabled = !uiState.isSavingDraft && !uiState.isFinalizing,
                                 modifier = Modifier.fillMaxWidth()
                             )
 
-                            val posStateName = IndianState.findByCode(uiState.placeOfSupplyStateCode)?.displayName
-                                ?: "State Code ${uiState.placeOfSupplyStateCode}"
-
-                            OutlinedCard(
-                                onClick = { showPosSheet = true },
+                            AppSecondaryButton(
+                                text = "Save Draft",
+                                onClick = { onIntent(PurchaseOrderUiIntent.OnSaveDraft) },
+                                isLoading = uiState.isSavingDraft,
+                                enabled = !uiState.isSavingDraft && !uiState.isFinalizing,
                                 modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(modifier = Modifier.padding(AppTheme.spacing.md)) {
-                                    Text(
-                                        text = "Place of Supply",
-                                        style = AppTheme.typography.labelMedium,
-                                        color = AppTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = "$posStateName (${uiState.placeOfSupplyStateCode})",
-                                        style = AppTheme.typography.titleSmall,
-                                        color = AppTheme.colorScheme.onSurface
-                                    )
-                                }
-                            }
-                            uiState.placeOfSupplyError?.let { err ->
-                                Text(text = err, style = AppTheme.typography.bodySmall, color = AppTheme.colorScheme.error)
-                            }
+                            )
+
+                            Spacer(modifier = Modifier.height(AppTheme.spacing.lg))
                         }
-                    }
-
-                    // Line Items Card
-                    AppCard(modifier = Modifier.fillMaxWidth()) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(AppTheme.spacing.md),
-                            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(modifier = Modifier.weight(1f)) {
-                                    AppSectionHeader(title = "Items (${uiState.lineItems.size})")
-                                }
-                                TextButton(onClick = { onIntent(PurchaseOrderUiIntent.OnAddLineItem) }) {
-                                    Icon(Icons.Default.Add, contentDescription = "Add Item")
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Add Item")
-                                }
-                            }
-
-                            uiState.lineItems.forEachIndexed { index, line ->
-                                val lineCalc = uiState.calculationPreview?.lineCalculations?.find { it.lineItemId == line.id }
-                                val invoiceLineUi = InvoiceLineUiState(
-                                    id = line.id,
-                                    selectedProduct = line.selectedProduct,
-                                    quantityInput = line.quantityInput,
-                                    rateInput = line.rateInput,
-                                    quantityError = line.quantityError,
-                                    rateError = line.rateError,
-                                    productError = line.productError
-                                )
-
-                                InvoiceLineItemCard(
-                                    position = index + 1,
-                                    lineState = invoiceLineUi,
-                                    lineCalc = lineCalc,
-                                    availableProducts = uiState.availableProducts,
-                                    onSelectProduct = { prod -> onIntent(PurchaseOrderUiIntent.OnSelectProduct(line.id, prod)) },
-                                    onQuantityChange = { qty -> onIntent(PurchaseOrderUiIntent.OnQuantityChange(line.id, qty)) },
-                                    onRateChange = { rate -> onIntent(PurchaseOrderUiIntent.OnRateChange(line.id, rate)) },
-                                    onRemoveLine = { onIntent(PurchaseOrderUiIntent.OnRemoveLineItem(line.id)) },
-                                    canRemove = uiState.lineItems.size > 1,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            }
-                        }
-                    }
-
-                    // Live Tax Calculation Summary Card
-                    AppCard(modifier = Modifier.fillMaxWidth()) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(AppTheme.spacing.md),
-                            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs)
-                        ) {
-                            AppSectionHeader(title = "Calculation Summary")
-
-                            val preview = uiState.calculationPreview
-                            if (preview != null) {
-                                CalculationRow(
-                                    label = "Taxable Amount",
-                                    value = String.format("₹%.2f", preview.taxableAmountPaise / 100.0)
-                                )
-
-                                if (preview.taxTreatment == TaxTreatment.INTRA_STATE) {
-                                    CalculationRow(
-                                        label = "CGST",
-                                        value = String.format("₹%.2f", preview.cgstAmountPaise / 100.0)
-                                    )
-                                    CalculationRow(
-                                        label = "SGST",
-                                        value = String.format("₹%.2f", preview.sgstAmountPaise / 100.0)
-                                    )
-                                } else {
-                                    CalculationRow(
-                                        label = "IGST",
-                                        value = String.format("₹%.2f", preview.igstAmountPaise / 100.0)
-                                    )
-                                }
-
-                                CalculationRow(
-                                    label = "Total Tax",
-                                    value = String.format("₹%.2f", preview.totalTaxAmountPaise / 100.0)
-                                )
-
-                                Spacer(modifier = Modifier.height(4.dp))
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(
-                                        text = "Grand Total",
-                                        style = AppTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = "₹ ${com.vivaanenterprise.app.core.pdf.PdfFormattingUtils.formatPaiseToCurrency(preview.grandTotalPaise)}",
-                                        style = AppTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = AppTheme.colorScheme.primary
-                                    )
-                                }
-
-                                preview.amountInWords?.let { words ->
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = words,
-                                        style = AppTheme.typography.bodySmall,
-                                        color = AppTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            } else {
-                                Text(
-                                    text = "Enter valid supplier, place of supply, items, quantity, and rate to view live calculation summary.",
-                                    style = AppTheme.typography.bodySmall,
-                                    color = AppTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-
-                    // Optional PO Metadata Card
-                    AppCard(modifier = Modifier.fillMaxWidth()) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(AppTheme.spacing.md)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                AppSectionHeader(title = "Additional Details")
-                                IconButton(onClick = { isMetadataExpanded = !isMetadataExpanded }) {
-                                    Icon(
-                                        imageVector = if (isMetadataExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                        contentDescription = if (isMetadataExpanded) "Collapse" else "Expand"
-                                    )
-                                }
-                            }
-
-                            AnimatedVisibility(visible = isMetadataExpanded) {
-                                Column(
-                                    verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
-                                    modifier = Modifier.padding(top = AppTheme.spacing.sm)
-                                ) {
-                                    AppTextField(
-                                        value = uiState.paymentTerms,
-                                        onValueChange = { onIntent(PurchaseOrderUiIntent.OnMetadataChange(paymentTerms = it)) },
-                                        label = "Mode/Terms of Payment",
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                    AppTextField(
-                                        value = uiState.supplierReference,
-                                        onValueChange = { onIntent(PurchaseOrderUiIntent.OnMetadataChange(supplierReference = it)) },
-                                        label = "Supplier Reference",
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                    AppTextField(
-                                        value = uiState.otherReferences,
-                                        onValueChange = { onIntent(PurchaseOrderUiIntent.OnMetadataChange(otherReferences = it)) },
-                                        label = "Other Reference(s)",
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                    AppTextField(
-                                        value = uiState.dispatchThrough,
-                                        onValueChange = { onIntent(PurchaseOrderUiIntent.OnMetadataChange(dispatchThrough = it)) },
-                                        label = "Dispatch Through",
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                    AppTextField(
-                                        value = uiState.destination,
-                                        onValueChange = { onIntent(PurchaseOrderUiIntent.OnMetadataChange(destination = it)) },
-                                        label = "Destination",
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                    AppTextField(
-                                        value = uiState.termsOfDelivery,
-                                        onValueChange = { onIntent(PurchaseOrderUiIntent.OnMetadataChange(termsOfDelivery = it)) },
-                                        label = "Terms of Delivery",
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    // Action Buttons
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.md)
-                    ) {
-                        AppSecondaryButton(
-                            text = if (uiState.isSavingDraft) "Saving..." else "Save Draft",
-                            onClick = { onIntent(PurchaseOrderUiIntent.OnSaveDraft) },
-                            enabled = !uiState.isSavingDraft && !uiState.isFinalizing,
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        AppPrimaryButton(
-                            text = if (uiState.isFinalizing) "Finalizing..." else "Finalize PO",
-                            onClick = { onIntent(PurchaseOrderUiIntent.OnRequestFinalize) },
-                            enabled = !uiState.isSavingDraft && !uiState.isFinalizing,
-                            modifier = Modifier.weight(1f)
-                        )
                     }
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun CalculationRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(text = label, style = AppTheme.typography.bodyMedium)
-        Text(text = value, style = AppTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -662,7 +512,7 @@ private fun PurchaseOrderScreenPreview() {
     )
 
     val sampleLineItems = listOf(
-        PurchaseOrderLineUiState(
+        DocumentLineUiState(
             id = "line_1",
             selectedProduct = sampleProduct,
             quantityInput = "10",
@@ -715,5 +565,6 @@ private fun PurchaseOrderScreenPreview() {
         )
     }
 }
+
 
 

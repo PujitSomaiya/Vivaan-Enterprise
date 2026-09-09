@@ -1,7 +1,6 @@
 package com.vivaanenterprise.app.feature.invoice.presentation
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,19 +11,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -42,7 +38,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vivaanenterprise.app.R
-import com.vivaanenterprise.app.core.designsystem.component.AppCard
 import com.vivaanenterprise.app.core.designsystem.component.AppErrorState
 import com.vivaanenterprise.app.core.designsystem.component.AppLoadingState
 import com.vivaanenterprise.app.core.designsystem.component.AppPrimaryButton
@@ -53,12 +48,12 @@ import com.vivaanenterprise.app.core.designsystem.component.AppTextField
 import com.vivaanenterprise.app.core.designsystem.component.AppTopBar
 import com.vivaanenterprise.app.core.designsystem.theme.AppTheme
 import com.vivaanenterprise.app.core.designsystem.theme.VivaanEnterpriseTheme
-import com.vivaanenterprise.app.domain.model.DocumentCalculationResult
 import com.vivaanenterprise.app.domain.model.IndianState
-import com.vivaanenterprise.app.domain.model.TaxTreatment
-import com.vivaanenterprise.app.feature.invoice.presentation.components.ClientSelectorBottomSheet
-import com.vivaanenterprise.app.feature.invoice.presentation.components.InvoiceLineItemCard
-import com.vivaanenterprise.app.feature.invoice.presentation.components.PlaceOfSupplyBottomSheet
+import com.vivaanenterprise.app.feature.document.presentation.components.ClientSelectorBottomSheet
+import com.vivaanenterprise.app.feature.document.presentation.components.DocumentAdditionalDetailsSection
+import com.vivaanenterprise.app.feature.document.presentation.components.DocumentCalculationSummary
+import com.vivaanenterprise.app.feature.document.presentation.components.DocumentLineItemCard
+import com.vivaanenterprise.app.feature.document.presentation.components.PlaceOfSupplyBottomSheet
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -343,7 +338,7 @@ fun InvoiceScreen(
                         key = { _, item -> item.id }
                     ) { index, lineState ->
                         val lineCalc = uiState.calculationPreview?.lineCalculations?.firstOrNull { it.lineItemId == lineState.id }
-                        InvoiceLineItemCard(
+                        DocumentLineItemCard(
                             position = index + 1,
                             lineState = lineState,
                             lineCalc = lineCalc,
@@ -358,101 +353,69 @@ fun InvoiceScreen(
 
                     // Live Calculation Preview Section
                     item {
-                        CalculationPreviewCard(preview = uiState.calculationPreview)
+                        DocumentCalculationSummary(preview = uiState.calculationPreview)
                     }
 
                     // Expandable Metadata Section
                     item {
-                        AppCard(
-                            modifier = Modifier.fillMaxWidth()
+                        DocumentAdditionalDetailsSection(
+                            expanded = showMetadataSection,
+                            onExpandedChange = { showMetadataSection = it }
                         ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(AppTheme.spacing.md)
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { showMetadataSection = !showMetadataSection },
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(
-                                        text = "Additional Details (Optional)",
-                                        style = AppTheme.typography.titleMedium,
-                                        color = AppTheme.colorScheme.onSurface
-                                    )
-                                    Icon(
-                                        imageVector = if (showMetadataSection) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                        contentDescription = "Toggle metadata"
-                                    )
-                                }
-
-                                AnimatedVisibility(visible = showMetadataSection) {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(top = AppTheme.spacing.md),
-                                        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)
-                                    ) {
-                                        AppTextField(
-                                            value = uiState.deliveryNote,
-                                            onValueChange = { onIntent(InvoiceUiIntent.OnMetadataChange(deliveryNote = it)) },
-                                            label = "Delivery Note",
-                                            modifier = Modifier.fillMaxWidth()
-                                        )
-                                        AppTextField(
-                                            value = uiState.paymentTerms,
-                                            onValueChange = { onIntent(InvoiceUiIntent.OnMetadataChange(paymentTerms = it)) },
-                                            label = "Mode / Terms of Payment",
-                                            modifier = Modifier.fillMaxWidth()
-                                        )
-                                        AppTextField(
-                                            value = uiState.supplierReference,
-                                            onValueChange = { onIntent(InvoiceUiIntent.OnMetadataChange(supplierReference = it)) },
-                                            label = "Supplier Reference",
-                                            modifier = Modifier.fillMaxWidth()
-                                        )
-                                        AppTextField(
-                                            value = uiState.otherReferences,
-                                            onValueChange = { onIntent(InvoiceUiIntent.OnMetadataChange(otherReferences = it)) },
-                                            label = "Other References",
-                                            modifier = Modifier.fillMaxWidth()
-                                        )
-                                        AppTextField(
-                                            value = uiState.buyerOrderNumber,
-                                            onValueChange = { onIntent(InvoiceUiIntent.OnMetadataChange(buyerOrderNumber = it)) },
-                                            label = "Buyer Order No.",
-                                            modifier = Modifier.fillMaxWidth()
-                                        )
-                                        AppTextField(
-                                            value = uiState.dispatchDocumentNumber,
-                                            onValueChange = { onIntent(InvoiceUiIntent.OnMetadataChange(dispatchDocumentNumber = it)) },
-                                            label = "Dispatch Document No.",
-                                            modifier = Modifier.fillMaxWidth()
-                                        )
-                                        AppTextField(
-                                            value = uiState.dispatchThrough,
-                                            onValueChange = { onIntent(InvoiceUiIntent.OnMetadataChange(dispatchThrough = it)) },
-                                            label = "Dispatched Through",
-                                            modifier = Modifier.fillMaxWidth()
-                                        )
-                                        AppTextField(
-                                            value = uiState.destination,
-                                            onValueChange = { onIntent(InvoiceUiIntent.OnMetadataChange(destination = it)) },
-                                            label = "Destination",
-                                            modifier = Modifier.fillMaxWidth()
-                                        )
-                                        AppTextField(
-                                            value = uiState.termsOfDelivery,
-                                            onValueChange = { onIntent(InvoiceUiIntent.OnMetadataChange(termsOfDelivery = it)) },
-                                            label = "Terms of Delivery",
-                                            modifier = Modifier.fillMaxWidth()
-                                        )
-                                    }
-                                }
-                            }
+                            AppTextField(
+                                value = uiState.deliveryNote,
+                                onValueChange = { onIntent(InvoiceUiIntent.OnMetadataChange(deliveryNote = it)) },
+                                label = "Delivery Note",
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            AppTextField(
+                                value = uiState.paymentTerms,
+                                onValueChange = { onIntent(InvoiceUiIntent.OnMetadataChange(paymentTerms = it)) },
+                                label = "Mode / Terms of Payment",
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            AppTextField(
+                                value = uiState.supplierReference,
+                                onValueChange = { onIntent(InvoiceUiIntent.OnMetadataChange(supplierReference = it)) },
+                                label = "Supplier Reference",
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            AppTextField(
+                                value = uiState.otherReferences,
+                                onValueChange = { onIntent(InvoiceUiIntent.OnMetadataChange(otherReferences = it)) },
+                                label = "Other References",
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            AppTextField(
+                                value = uiState.buyerOrderNumber,
+                                onValueChange = { onIntent(InvoiceUiIntent.OnMetadataChange(buyerOrderNumber = it)) },
+                                label = "Buyer Order No.",
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            AppTextField(
+                                value = uiState.dispatchDocumentNumber,
+                                onValueChange = { onIntent(InvoiceUiIntent.OnMetadataChange(dispatchDocumentNumber = it)) },
+                                label = "Dispatch Document No.",
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            AppTextField(
+                                value = uiState.dispatchThrough,
+                                onValueChange = { onIntent(InvoiceUiIntent.OnMetadataChange(dispatchThrough = it)) },
+                                label = "Dispatched Through",
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            AppTextField(
+                                value = uiState.destination,
+                                onValueChange = { onIntent(InvoiceUiIntent.OnMetadataChange(destination = it)) },
+                                label = "Destination",
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            AppTextField(
+                                value = uiState.termsOfDelivery,
+                                onValueChange = { onIntent(InvoiceUiIntent.OnMetadataChange(termsOfDelivery = it)) },
+                                label = "Terms of Delivery",
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         }
                     }
 
@@ -486,100 +449,6 @@ fun InvoiceScreen(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun CalculationPreviewCard(
-    preview: DocumentCalculationResult?,
-    modifier: Modifier = Modifier
-) {
-    AppCard(
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(AppTheme.spacing.md)
-        ) {
-            Text(
-                text = "Calculation Summary",
-                style = AppTheme.typography.titleMedium,
-                color = AppTheme.colorScheme.onSurface
-            )
-
-            Spacer(modifier = Modifier.height(AppTheme.spacing.xs))
-
-            if (preview == null) {
-                Text(
-                    text = "Fill in valid quantity and rate to calculate preview.",
-                    style = AppTheme.typography.bodySmall,
-                    color = AppTheme.colorScheme.onSurfaceVariant
-                )
-            } else {
-                val taxableStr = "₹ ${com.vivaanenterprise.app.core.pdf.PdfFormattingUtils.formatPaiseToCurrency(preview.taxableAmountPaise)}"
-                val totalTaxStr = "₹ ${com.vivaanenterprise.app.core.pdf.PdfFormattingUtils.formatPaiseToCurrency(preview.totalTaxAmountPaise)}"
-                val grandTotalStr = "₹ ${com.vivaanenterprise.app.core.pdf.PdfFormattingUtils.formatPaiseToCurrency(preview.grandTotalPaise)}"
-
-                SummaryRow("Taxable Amount:", taxableStr)
-
-                when (preview.taxTreatment) {
-                    TaxTreatment.INTER_STATE -> {
-                        val igstStr = "₹ ${com.vivaanenterprise.app.core.pdf.PdfFormattingUtils.formatPaiseToCurrency(preview.igstAmountPaise)}"
-                        SummaryRow("IGST:", igstStr)
-                    }
-                    TaxTreatment.INTRA_STATE -> {
-                        val cgstStr = "₹ ${com.vivaanenterprise.app.core.pdf.PdfFormattingUtils.formatPaiseToCurrency(preview.cgstAmountPaise)}"
-                        val sgstStr = "₹ ${com.vivaanenterprise.app.core.pdf.PdfFormattingUtils.formatPaiseToCurrency(preview.sgstAmountPaise)}"
-                        SummaryRow("CGST:", cgstStr)
-                        SummaryRow("SGST:", sgstStr)
-                    }
-                }
-
-                SummaryRow("Total Tax:", totalTaxStr)
-
-                Spacer(modifier = Modifier.height(AppTheme.spacing.xxs))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "Grand Total:",
-                        style = AppTheme.typography.titleLarge,
-                        color = AppTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = grandTotalStr,
-                        style = AppTheme.typography.titleLarge,
-                        color = AppTheme.colorScheme.primary
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(AppTheme.spacing.xs))
-
-                preview.amountInWords?.let { words ->
-                    Text(
-                        text = words,
-                        style = AppTheme.typography.bodySmall,
-                        color = AppTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SummaryRow(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = AppTheme.spacing.xxs),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(text = label, style = AppTheme.typography.bodyMedium, color = AppTheme.colorScheme.onSurfaceVariant)
-        Text(text = value, style = AppTheme.typography.bodyMedium, color = AppTheme.colorScheme.onSurface)
     }
 }
 

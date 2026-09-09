@@ -1,4 +1,4 @@
-package com.vivaanenterprise.app.feature.invoice.presentation.components
+package com.vivaanenterprise.app.feature.document.presentation.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
@@ -31,12 +31,12 @@ import com.vivaanenterprise.app.core.designsystem.component.AppTextField
 import com.vivaanenterprise.app.core.designsystem.theme.AppTheme
 import com.vivaanenterprise.app.domain.model.DocumentLineCalculation
 import com.vivaanenterprise.app.domain.model.Product
-import com.vivaanenterprise.app.feature.invoice.presentation.InvoiceLineUiState
+import com.vivaanenterprise.app.feature.document.presentation.model.DocumentLineUiState
 
 @Composable
-fun InvoiceLineItemCard(
+fun DocumentLineItemCard(
     position: Int,
-    lineState: InvoiceLineUiState,
+    lineState: DocumentLineUiState,
     lineCalc: DocumentLineCalculation?,
     availableProducts: List<Product>,
     onSelectProduct: (Product) -> Unit,
