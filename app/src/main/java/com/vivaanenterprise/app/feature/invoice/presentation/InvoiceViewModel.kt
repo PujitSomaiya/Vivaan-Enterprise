@@ -166,6 +166,8 @@ class InvoiceViewModel @Inject constructor(
                 isDocumentNumberManuallyEdited = true,
                 documentDate = document.documentDate,
                 selectedClient = selectedClient,
+                deliveryFactoryAddress = document.deliveryFactoryAddress ?: selectedClient?.address ?: "",
+                isDeliveryFactoryAddressManuallyEdited = !document.deliveryFactoryAddress.isNullOrBlank(),
                 placeOfSupplyStateCode = document.placeOfSupply.orEmpty(),
                 isPlaceOfSupplyManuallyEdited = document.placeOfSupply != null,
                 lineItems = lines,
@@ -192,6 +194,7 @@ class InvoiceViewModel @Inject constructor(
             is InvoiceUiIntent.OnDocumentNumberChange -> handleDocumentNumberChange(intent.number)
             is InvoiceUiIntent.OnDocumentDateChange -> handleDocumentDateChange(intent.dateMillis)
             is InvoiceUiIntent.OnSelectClient -> handleSelectClient(intent.client)
+            is InvoiceUiIntent.OnDeliveryFactoryAddressChange -> handleDeliveryFactoryAddressChange(intent.address)
             is InvoiceUiIntent.OnPlaceOfSupplyChange -> handlePlaceOfSupplyChange(intent.stateCode)
             is InvoiceUiIntent.OnAddLineItem -> handleAddLineItem()
             is InvoiceUiIntent.OnRemoveLineItem -> handleRemoveLineItem(intent.lineId)
@@ -246,14 +249,33 @@ class InvoiceViewModel @Inject constructor(
             } else {
                 current.placeOfSupplyStateCode
             }
+
+            val updatedDeliveryAddress = if (!current.isDeliveryFactoryAddressManuallyEdited && !client.address.isNullOrBlank()) {
+                client.address
+            } else {
+                current.deliveryFactoryAddress
+            }
+
             current.copy(
                 selectedClient = client,
+                deliveryFactoryAddress = updatedDeliveryAddress,
                 placeOfSupplyStateCode = updatedStateCode,
                 clientError = null,
                 isDirty = true
             )
         }
         recalculatePreview()
+    }
+
+    private fun handleDeliveryFactoryAddressChange(address: String) {
+        _uiState.update { current ->
+            current.copy(
+                deliveryFactoryAddress = address,
+                isDeliveryFactoryAddressManuallyEdited = true,
+                deliveryFactoryAddressError = null,
+                isDirty = true
+            )
+        }
     }
 
     private fun handlePlaceOfSupplyChange(stateCode: String) {
@@ -494,6 +516,7 @@ class InvoiceViewModel @Inject constructor(
                         documentNumber = state.documentNumber,
                         lineItems = domainLineItems,
                         placeOfSupply = state.placeOfSupplyStateCode,
+                        deliveryFactoryAddress = state.deliveryFactoryAddress.ifBlank { null },
                         paymentTerms = state.paymentTerms.ifBlank { null },
                         deliveryNote = state.deliveryNote.ifBlank { null },
                         supplierReference = state.supplierReference.ifBlank { null },
@@ -517,6 +540,7 @@ class InvoiceViewModel @Inject constructor(
                         documentDate = state.documentDate,
                         clientId = client.id,
                         placeOfSupply = state.placeOfSupplyStateCode,
+                        deliveryFactoryAddress = state.deliveryFactoryAddress.ifBlank { null },
                         paymentTerms = state.paymentTerms.ifBlank { null },
                         deliveryNote = state.deliveryNote.ifBlank { null },
                         supplierReference = state.supplierReference.ifBlank { null },
@@ -602,6 +626,7 @@ class InvoiceViewModel @Inject constructor(
                             documentNumber = state.documentNumber,
                             lineItems = domainLineItems,
                             placeOfSupply = state.placeOfSupplyStateCode,
+                            deliveryFactoryAddress = state.deliveryFactoryAddress.ifBlank { null },
                             paymentTerms = state.paymentTerms.ifBlank { null },
                             deliveryNote = state.deliveryNote.ifBlank { null },
                             supplierReference = state.supplierReference.ifBlank { null },
@@ -625,6 +650,7 @@ class InvoiceViewModel @Inject constructor(
                             documentDate = state.documentDate,
                             clientId = client.id,
                             placeOfSupply = state.placeOfSupplyStateCode,
+                            deliveryFactoryAddress = state.deliveryFactoryAddress.ifBlank { null },
                             paymentTerms = state.paymentTerms.ifBlank { null },
                             deliveryNote = state.deliveryNote.ifBlank { null },
                             supplierReference = state.supplierReference.ifBlank { null },

@@ -595,6 +595,46 @@ class InvoiceViewModelTest {
         assertNull(viewModel.uiState.value.generalError)
     }
 
+    // ── DELIVERY FACTORY ADDRESS ─────────────────────────────────────────
+
+    @Test
+    fun test43_selectingClientDefaultsDeliveryFactoryAddress() = runTest(testDispatcher) {
+        testScheduler.advanceUntilIdle()
+        viewModel.onIntent(InvoiceUiIntent.OnSelectClient(testClient))
+        assertEquals("Ahmedabad", viewModel.uiState.value.deliveryFactoryAddress)
+    }
+
+    @Test
+    fun test44_manualDeliveryAddressSurvivesClientChange() = runTest(testDispatcher) {
+        testScheduler.advanceUntilIdle()
+        viewModel.onIntent(InvoiceUiIntent.OnSelectClient(testClient))
+        viewModel.onIntent(InvoiceUiIntent.OnDeliveryFactoryAddressChange("Custom Invoice Factory"))
+        assertTrue(viewModel.uiState.value.isDeliveryFactoryAddressManuallyEdited)
+        assertTrue(viewModel.uiState.value.isDirty)
+
+        val otherClient = testClient.copy(id = "client-2", address = "Baroda")
+        viewModel.onIntent(InvoiceUiIntent.OnSelectClient(otherClient))
+        assertEquals("Custom Invoice Factory", viewModel.uiState.value.deliveryFactoryAddress)
+    }
+
+    @Test
+    fun test45_saveDraftAndFinalizePersistsDeliveryFactoryAddress() = runTest(testDispatcher) {
+        testScheduler.advanceUntilIdle()
+        viewModel.onIntent(InvoiceUiIntent.OnSelectClient(testClient))
+        viewModel.onIntent(InvoiceUiIntent.OnDeliveryFactoryAddressChange("Persisted Invoice Address"))
+        val lineId = viewModel.uiState.value.lineItems.first().id
+        viewModel.onIntent(InvoiceUiIntent.OnSelectProduct(lineId, testProduct))
+        viewModel.onIntent(InvoiceUiIntent.OnQuantityChange(lineId, "1"))
+        viewModel.onIntent(InvoiceUiIntent.OnRateChange(lineId, "100"))
+
+        viewModel.onIntent(InvoiceUiIntent.OnConfirmFinalize)
+        testScheduler.advanceUntilIdle()
+
+        val savedDoc = fakeDocumentRepository.storedDocs["doc-1"]
+        assertNotNull(savedDoc)
+        assertEquals("Persisted Invoice Address", savedDoc?.deliveryFactoryAddress)
+    }
+
     // ── Fakes ─────────────────────────────────────────────────────────────
 
     private class FakeClientRepository(initialClients: List<Client>) : ClientRepository {

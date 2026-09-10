@@ -21,6 +21,8 @@ data class InvoiceUiState(
     val documentDate: Long = System.currentTimeMillis(),
     val isDocumentDateTouched: Boolean = false,
     val selectedClient: Client? = null,
+    val deliveryFactoryAddress: String = "",
+    val isDeliveryFactoryAddressManuallyEdited: Boolean = false,
     val placeOfSupplyStateCode: String = "", // Unset until selected or auto-derived from valid client stateCode
     val isPlaceOfSupplyManuallyEdited: Boolean = false,
     val lineItems: List<InvoiceLineUiState> = emptyList(),
@@ -54,6 +56,7 @@ data class InvoiceUiState(
     // Validation & Error states
     val documentNumberError: String? = null,
     val clientError: String? = null,
+    val deliveryFactoryAddressError: String? = null,
     val placeOfSupplyError: String? = null,
     val generalError: String? = null,
     val showFinalizeConfirmDialog: Boolean = false
@@ -63,6 +66,7 @@ sealed interface InvoiceUiIntent {
     data class OnDocumentNumberChange(val number: String) : InvoiceUiIntent
     data class OnDocumentDateChange(val dateMillis: Long) : InvoiceUiIntent
     data class OnSelectClient(val client: Client) : InvoiceUiIntent
+    data class OnDeliveryFactoryAddressChange(val address: String) : InvoiceUiIntent
     data class OnPlaceOfSupplyChange(val stateCode: String) : InvoiceUiIntent
 
     data object OnAddLineItem : InvoiceUiIntent

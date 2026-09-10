@@ -321,6 +321,17 @@ fun InvoiceScreen(
 
                         Spacer(modifier = Modifier.height(AppTheme.spacing.sm))
 
+                        // Delivery / Factory Address
+                        AppTextField(
+                            value = uiState.deliveryFactoryAddress,
+                            onValueChange = { onIntent(InvoiceUiIntent.OnDeliveryFactoryAddressChange(it)) },
+                            label = "Delivery / Factory Address",
+                            errorText = uiState.deliveryFactoryAddressError,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(modifier = Modifier.height(AppTheme.spacing.sm))
+
                         // Place of Supply Picker
                         val posState = remember(uiState.placeOfSupplyStateCode) {
                             IndianState.findByCode(uiState.placeOfSupplyStateCode)

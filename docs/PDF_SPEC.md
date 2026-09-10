@@ -31,6 +31,7 @@ The generated Tax Invoice PDF must strictly reproduce the following structural b
 | +-----------------------------------------------+-------------------------------+ |
 | BILL TO (BUYER DETAILS)                                                           |
 | Client Name, Address, State Code, GSTIN, PAN, Phone                               |
+| DELIVERY / FACTORY ADDRESS (If specified)                                         |
 +-----------------------------------------------------------------------------------+
 | PRODUCT & SERVICE TABLE                                                           |
 | Sl. | Description of Goods | HSN/SAC | Quantity | Rate (₹) | Per | Amount (₹)   |

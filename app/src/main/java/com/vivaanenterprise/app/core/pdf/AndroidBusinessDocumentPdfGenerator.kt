@@ -265,7 +265,7 @@ class AndroidBusinessDocumentPdfGenerator @Inject constructor(
             contentY += 12f
         }
 
-        if (!isInvoice && !doc.deliveryFactoryAddress.isNullOrBlank()) {
+        if (!doc.deliveryFactoryAddress.isNullOrBlank()) {
             ctx.canvas.drawRect(leftX, contentY + 2f, PdfPageContext.MARGIN_RIGHT, contentY + 18f, ctx.paintFillHeader)
             ctx.canvas.drawRect(leftX, contentY + 2f, PdfPageContext.MARGIN_RIGHT, contentY + 18f, ctx.paintLine)
             ctx.drawText("DELIVERY / FACTORY ADDRESS", leftX + 8f, contentY + 13f, ctx.textPaintHeaderLabel)
