@@ -19,9 +19,9 @@ It is designed for rapid, reliable local operation with background remote synchr
 ---
 
 ## Project Status
-> **Current Phase**: Documents / History Implemented (Step 15)
+> **Current Phase**: Offline Failure Hardening Implemented (Step 17)
 > 
-> The application features complete Client Master, Product Master, Document Domain foundation, Tax Calculation Engine, Tax Invoice & Purchase Order Creation UI, Native A4 PDF Generation Engine, Native PDF Viewer, PDF share/export, and Document History (Draft/Finalized document browsing, search, type & status filters, detailed view, draft editing, and PDF viewing from history).
+> The application features complete Client Master, Product Master, Document Domain foundation, Tax Calculation Engine, Tax Invoice & Purchase Order Creation UI, Native A4 PDF Generation Engine, Native PDF Viewer, PDF share/export, Document History, Client Billing Account history & Dashboard summaries, and hardened WorkManager offline synchronization with robust retry/cancellation, parent-child ordering, and snapshot immutability.
 
 ---
 
