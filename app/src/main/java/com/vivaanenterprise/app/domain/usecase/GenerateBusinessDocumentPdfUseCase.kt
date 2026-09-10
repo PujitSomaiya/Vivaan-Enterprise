@@ -22,18 +22,15 @@ open class GenerateBusinessDocumentPdfUseCase @Inject constructor(
     open suspend operator fun invoke(documentId: String): PdfGenerationResult {
         val document = documentRepository.getDocumentById(documentId)
             ?: return PdfGenerationResult.Failure.Error(IllegalArgumentException("Document not found"))
-        val lineItems = documentRepository.getLineItemsForDocument(documentId)
-        val fullDoc = document.copy(lineItems = lineItems)
-        return pdfGenerator.generatePdf(fullDoc)
+        return pdfGenerator.generatePdf(document)
     }
 
     suspend operator fun invoke(document: BusinessDocument): PdfGenerationResult {
-        val lineItems = if (document.lineItems.isEmpty()) {
-            documentRepository.getLineItemsForDocument(document.id)
+        val fullDoc = if (document.lineItems.isEmpty()) {
+            documentRepository.getDocumentById(document.id) ?: document
         } else {
-            document.lineItems
+            document
         }
-        val fullDoc = document.copy(lineItems = lineItems)
         return pdfGenerator.generatePdf(fullDoc)
     }
 }
