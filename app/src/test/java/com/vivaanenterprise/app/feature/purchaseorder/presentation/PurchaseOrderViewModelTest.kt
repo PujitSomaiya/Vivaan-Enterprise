@@ -158,7 +158,7 @@ class PurchaseOrderViewModelTest {
         testScheduler.advanceUntilIdle()
 
         assertFalse(viewModel.uiState.value.showFinalizeConfirmDialog)
-        assertEquals("Please enter a delivery/factory address", viewModel.uiState.value.deliveryFactoryAddressError)
+        assertEquals("Delivery / Factory address is required", viewModel.uiState.value.deliveryFactoryAddressError)
     }
 
     @Test
@@ -263,7 +263,8 @@ class PurchaseOrderViewModelTest {
         viewModel.onIntent(PurchaseOrderUiIntent.OnConfirmFinalize)
         testScheduler.advanceUntilIdle()
 
-        assertEquals("Purchase order number is already in use.", viewModel.uiState.value.generalError)
+        assertEquals("A purchase order with this number already exists.", viewModel.uiState.value.documentNumberError)
+        assertNull(viewModel.uiState.value.generalError)
     }
 
     @Test

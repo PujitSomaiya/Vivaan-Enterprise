@@ -591,7 +591,8 @@ class InvoiceViewModelTest {
         viewModel.onIntent(InvoiceUiIntent.OnConfirmFinalize)
         testScheduler.advanceUntilIdle()
 
-        assertEquals("This invoice number is already in use.", viewModel.uiState.value.generalError)
+        assertEquals("An invoice with this number already exists.", viewModel.uiState.value.documentNumberError)
+        assertNull(viewModel.uiState.value.generalError)
     }
 
     // ── Fakes ─────────────────────────────────────────────────────────────

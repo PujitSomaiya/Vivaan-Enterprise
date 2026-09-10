@@ -38,7 +38,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.foundation.lazy.rememberLazyListState
 import com.vivaanenterprise.app.R
+import com.vivaanenterprise.app.core.designsystem.component.AppErrorDialog
 import com.vivaanenterprise.app.core.designsystem.component.AppErrorState
 import com.vivaanenterprise.app.core.designsystem.component.AppLoadingState
 import com.vivaanenterprise.app.core.designsystem.component.AppPrimaryButton
@@ -108,9 +110,45 @@ fun PurchaseOrderScreen(
     var showClientSheet by remember { mutableStateOf(false) }
     var showPosSheet by remember { mutableStateOf(false) }
     var isMetadataExpanded by remember { mutableStateOf(false) }
+    val listState = rememberLazyListState()
 
     BackHandler(enabled = uiState.isDirty) {
         showDiscardDialog = true
+    }
+
+    // Non-field operation error dialog
+    uiState.generalError?.let { err ->
+        if (uiState.availableClients.isNotEmpty()) {
+            AppErrorDialog(
+                message = err,
+                onDismiss = { onIntent(PurchaseOrderUiIntent.OnClearGeneralError) }
+            )
+        }
+    }
+
+    // Auto-scroll to first field error if any validation error occurs
+    val hasFieldErrors = uiState.documentNumberError != null ||
+            uiState.clientError != null ||
+            uiState.deliveryFactoryAddressError != null ||
+            uiState.placeOfSupplyError != null ||
+            uiState.lineItems.any { it.productError != null || it.quantityError != null || it.rateError != null }
+
+    LaunchedEffect(hasFieldErrors) {
+        if (hasFieldErrors) {
+            when {
+                uiState.documentNumberError != null || uiState.clientError != null || uiState.deliveryFactoryAddressError != null || uiState.placeOfSupplyError != null -> {
+                    listState.animateScrollToItem(0)
+                }
+                uiState.lineItems.any { it.productError != null || it.quantityError != null || it.rateError != null } -> {
+                    val firstInvalidIndex = uiState.lineItems.indexOfFirst {
+                        it.productError != null || it.quantityError != null || it.rateError != null
+                    }
+                    if (firstInvalidIndex >= 0) {
+                        listState.animateScrollToItem(firstInvalidIndex + 2)
+                    }
+                }
+            }
+        }
     }
 
     if (showDiscardDialog) {
@@ -243,22 +281,13 @@ fun PurchaseOrderScreen(
             }
             else -> {
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
                         .padding(horizontal = AppTheme.spacing.md),
                     verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.md)
                 ) {
-                    item {
-                        uiState.generalError?.let { err ->
-                            AppErrorState(
-                                message = err,
-                                onRetryClick = { onIntent(PurchaseOrderUiIntent.OnClearGeneralError) },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    }
-
                     item {
                         Spacer(modifier = Modifier.height(AppTheme.spacing.xs))
                         AppSectionHeader(title = "Header Information")

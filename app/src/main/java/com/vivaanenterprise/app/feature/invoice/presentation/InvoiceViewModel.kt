@@ -404,7 +404,7 @@ class InvoiceViewModel @Inject constructor(
 
         var clientErr: String? = null
         if (state.selectedClient == null) {
-            clientErr = "Please select a client"
+            clientErr = "Client is required"
             isValid = false
         }
 
@@ -421,19 +421,19 @@ class InvoiceViewModel @Inject constructor(
             var rateErr: String? = null
 
             if (line.selectedProduct == null) {
-                prodErr = "Select a product"
+                prodErr = "Product is required"
                 lineValid = false
             }
 
             val qty = line.quantityInput.toLongOrNull()
             if (qty == null || qty <= 0) {
-                qtyErr = "Quantity must be > 0"
+                qtyErr = "Quantity must be greater than zero"
                 lineValid = false
             }
 
             val ratePaise = ExactCurrencyParser.parseToPaise(line.rateInput)
             if (ratePaise == null || ratePaise < 0) {
-                rateErr = "Enter valid rate"
+                rateErr = "Enter a valid rate"
                 lineValid = false
             }
 
@@ -668,14 +668,21 @@ class InvoiceViewModel @Inject constructor(
                         _uiEffect.emit(InvoiceUiEffect.NavigateSuccess(docIdToFinalize))
                     }
                     is DocumentFinalizationResult.Invalid -> {
-                        val msg = when {
-                            finalizationResult.errors.contains(DocumentValidationError.DuplicateDocumentNumber) ->
-                                "This invoice number is already in use."
-                            finalizationResult.errors.contains(DocumentValidationError.MissingSellerProfile) ->
-                                "Seller profile is incomplete."
-                            else -> "Unable to finalize invoice. Please check all fields."
+                        val isDuplicate = finalizationResult.errors.contains(DocumentValidationError.DuplicateDocumentNumber)
+                        val isMissingProfile = finalizationResult.errors.contains(DocumentValidationError.MissingSellerProfile)
+                        
+                        if (isDuplicate) {
+                            _uiState.update { 
+                                it.copy(
+                                    isFinalizing = false,
+                                    documentNumberError = "An invoice with this number already exists.",
+                                    generalError = null
+                                ) 
+                            }
+                        } else {
+                            val msg = if (isMissingProfile) "Seller profile is incomplete." else "Unable to finalize invoice. Please check all fields."
+                            _uiState.update { it.copy(isFinalizing = false, generalError = msg) }
                         }
-                        _uiState.update { it.copy(isFinalizing = false, generalError = msg) }
                     }
                     is DocumentFinalizationResult.Failure -> {
                         _uiState.update { it.copy(isFinalizing = false, generalError = "Unable to finalize invoice. Please try again.") }

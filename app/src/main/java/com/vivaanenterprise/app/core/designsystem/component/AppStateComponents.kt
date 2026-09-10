@@ -197,3 +197,39 @@ fun AppSyncIndicator(
         }
     }
 }
+
+@Composable
+fun AppErrorDialog(
+    message: String,
+    onDismiss: () -> Unit,
+    title: String = "Unable to complete action",
+    confirmText: String = stringResource(id = R.string.confirm_action),
+    modifier: Modifier = Modifier
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = title,
+                style = AppTheme.typography.titleMedium,
+                color = AppTheme.colorScheme.onSurface
+            )
+        },
+        text = {
+            Text(
+                text = message,
+                style = AppTheme.typography.bodyMedium,
+                color = AppTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) {
+                Text(text = confirmText)
+            }
+        },
+        containerColor = AppTheme.colorScheme.surface,
+        shape = AppTheme.shapes.large,
+        modifier = modifier
+    )
+}
+
