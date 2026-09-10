@@ -37,8 +37,7 @@ sealed interface ClientFormUiIntent {
     data class CompanyNameChanged(val value: String) : ClientFormUiIntent
     data class AddressChanged(val value: String) : ClientFormUiIntent
     data class GstinChanged(val value: String) : ClientFormUiIntent
-    data class StateChanged(val value: String) : ClientFormUiIntent
-    data class StateCodeChanged(val value: String) : ClientFormUiIntent
+    data class StateSelected(val stateCode: String) : ClientFormUiIntent
     data class EmailChanged(val value: String) : ClientFormUiIntent
     data class PhoneChanged(val value: String) : ClientFormUiIntent
     data class PanChanged(val value: String) : ClientFormUiIntent

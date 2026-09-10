@@ -58,11 +58,20 @@
     <string name="address_label">Address</string>
     <string name="gstin_label">GSTIN / UIN</string>
     <string name="state_label">State</string>
+    <string name="state_picker_label">State</string>
     <string name="state_code_label">State Code</string>
     <string name="phone_label">Phone Number</string>
     <string name="pan_label">PAN</string>
     <string name="iec_label">Import Export Code (IEC)</string>
     <string name="other_details_label">Other Details</string>
+
+    <!-- State Picker Strings -->
+    <string name="select_state_title">Select State</string>
+    <string name="select_place_of_supply_title">Select Place of Supply</string>
+    <string name="search_state_placeholder">Search state or code...</string>
+    <string name="no_state_found">No state found</string>
+    <string name="gst_state_code_label">GST State Code: %1$s</string>
+    <string name="close_desc">Close</string>
 
     <!-- Client Validation Errors -->
     <string name="error_company_name_required">Company name is required</string>
