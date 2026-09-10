@@ -74,7 +74,7 @@ fun AppTextField(
                 keyboardOptions = keyboardOptions,
                 keyboardActions = keyboardActions,
                 singleLine = singleLine,
-                shape = AppTheme.shapes.small,
+                shape = AppTheme.shapes.medium,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = AppTheme.colorScheme.primary,
                     unfocusedBorderColor = AppTheme.colorScheme.outline,

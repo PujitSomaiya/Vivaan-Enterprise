@@ -76,12 +76,13 @@ Layouts follow a strict 4dp/8dp modular spacing grid:
 ---
 
 ## 5. Shape System
-Shapes use conservative, modest corner rounding to maintain a clean corporate look:
-- **Small Controls (`4dp`)**: Text input fields, dropdown menus, table cells.
-- **Buttons & Chips (`8dp`)**: Primary/secondary buttons, status tags, search fields.
-- **Cards & Dialogs (`12dp`)**: Surface cards, confirmation dialogs, bottom sheets.
-
-*Pill-shaped (28dp+) oversized buttons or cards are avoided for core business forms.*
+Shapes follow a modern, rounded Material 3 scale to give the app a friendly, spacious, and highly polished aesthetic:
+- **Extra Small (`6dp`)**: Micro tags, inline status indicators.
+- **Small Controls (`8dp`)**: Filter chips, badge containers.
+- **Medium Controls (`16dp`)**: Text input fields, selector fields, table cells, secondary buttons, list item cards.
+- **Large Controls & Cards (`24dp`)**: Surface cards, financial summary cards, primary action containers.
+- **Extra Large (`28dp`)**: Bottom sheets, modal dialogs, top sheet containers.
+- **Full / Pill (`100dp`)**: Action buttons, search bars, pill chips.
 
 ---
 
