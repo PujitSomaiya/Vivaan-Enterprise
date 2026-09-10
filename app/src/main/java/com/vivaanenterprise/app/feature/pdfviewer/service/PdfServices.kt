@@ -86,11 +86,6 @@ open class PdfCacheManager @Inject constructor(
                     finalPath,
                     java.nio.file.StandardCopyOption.REPLACE_EXISTING
                 )
-            } catch (e: Exception) {
-                if (!tmpFile.renameTo(finalFile)) {
-                    tmpFile.copyTo(finalFile, overwrite = true)
-                    tmpFile.delete()
-                }
             }
             finalFile
         } catch (ce: CancellationException) {
