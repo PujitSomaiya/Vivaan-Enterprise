@@ -94,18 +94,15 @@ fun DocumentLineItemCard(
                 value = lineState.selectedProduct?.name ?: "",
                 onValueChange = {},
                 label = "Product *",
-                readOnly = true,
+                onClick = { showProductPicker = true },
                 errorText = lineState.productError,
                 trailingIcon = {
                     Icon(
                         imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = "Select product",
-                        modifier = Modifier.clickable { showProductPicker = true }
+                        contentDescription = "Select product"
                     )
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showProductPicker = true }
+                modifier = Modifier.fillMaxWidth()
             )
 
             val prod = lineState.selectedProduct

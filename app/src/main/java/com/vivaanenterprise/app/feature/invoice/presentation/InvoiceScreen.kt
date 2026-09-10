@@ -260,20 +260,16 @@ fun InvoiceScreen(
                             value = formattedDate,
                             onValueChange = {},
                             label = "Invoice Date *",
-                            readOnly = true,
+                            onClick = { showDatePicker = true },
                             trailingIcon = {
                                 Text(
                                     text = "Change",
                                     style = AppTheme.typography.labelMedium,
                                     color = AppTheme.colorScheme.primary,
-                                    modifier = Modifier
-                                        .padding(end = AppTheme.spacing.xs)
-                                        .clickable { showDatePicker = true }
+                                    modifier = Modifier.padding(end = AppTheme.spacing.xs)
                                 )
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { showDatePicker = true }
+                            modifier = Modifier.fillMaxWidth()
                         )
 
                         Spacer(modifier = Modifier.height(AppTheme.spacing.sm))
@@ -283,18 +279,15 @@ fun InvoiceScreen(
                             value = uiState.selectedClient?.companyName ?: "",
                             onValueChange = {},
                             label = "Client *",
-                            readOnly = true,
+                            onClick = { showClientSheet = true },
                             errorText = uiState.clientError,
                             trailingIcon = {
                                 Icon(
                                     imageVector = Icons.Default.KeyboardArrowDown,
-                                    contentDescription = "Select Client",
-                                    modifier = Modifier.clickable { showClientSheet = true }
+                                    contentDescription = "Select Client"
                                 )
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { showClientSheet = true }
+                            modifier = Modifier.fillMaxWidth()
                         )
 
                         Spacer(modifier = Modifier.height(AppTheme.spacing.sm))
@@ -309,18 +302,15 @@ fun InvoiceScreen(
                             value = posDisplayText,
                             onValueChange = {},
                             label = "Place of Supply *",
-                            readOnly = true,
+                            onClick = { showPlaceOfSupplySheet = true },
                             errorText = uiState.placeOfSupplyError,
                             trailingIcon = {
                                 Icon(
                                     imageVector = Icons.Default.KeyboardArrowDown,
-                                    contentDescription = "Select Place of Supply",
-                                    modifier = Modifier.clickable { showPlaceOfSupplySheet = true }
+                                    contentDescription = "Select Place of Supply"
                                 )
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { showPlaceOfSupplySheet = true }
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
 

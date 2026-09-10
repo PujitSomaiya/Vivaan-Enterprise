@@ -284,20 +284,16 @@ fun PurchaseOrderScreen(
                             value = formattedDate,
                             onValueChange = {},
                             label = "PO Date *",
-                            readOnly = true,
+                            onClick = { showDatePickerDialog = true },
                             trailingIcon = {
                                 Text(
                                     text = "Change",
                                     style = AppTheme.typography.labelMedium,
                                     color = AppTheme.colorScheme.primary,
-                                    modifier = Modifier
-                                        .padding(end = AppTheme.spacing.xs)
-                                        .clickable { showDatePickerDialog = true }
+                                    modifier = Modifier.padding(end = AppTheme.spacing.xs)
                                 )
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { showDatePickerDialog = true }
+                            modifier = Modifier.fillMaxWidth()
                         )
 
                         Spacer(modifier = Modifier.height(AppTheme.spacing.sm))
@@ -307,18 +303,15 @@ fun PurchaseOrderScreen(
                             value = uiState.selectedClient?.companyName ?: "",
                             onValueChange = {},
                             label = "Supplier / Client *",
-                            readOnly = true,
+                            onClick = { showClientSheet = true },
                             errorText = uiState.clientError,
                             trailingIcon = {
                                 Icon(
                                     imageVector = Icons.Default.KeyboardArrowDown,
-                                    contentDescription = "Select Supplier / Client",
-                                    modifier = Modifier.clickable { showClientSheet = true }
+                                    contentDescription = "Select Supplier / Client"
                                 )
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { showClientSheet = true }
+                            modifier = Modifier.fillMaxWidth()
                         )
 
                         Spacer(modifier = Modifier.height(AppTheme.spacing.sm))
@@ -344,18 +337,15 @@ fun PurchaseOrderScreen(
                             value = posDisplayText,
                             onValueChange = {},
                             label = "Place of Supply *",
-                            readOnly = true,
+                            onClick = { showPosSheet = true },
                             errorText = uiState.placeOfSupplyError,
                             trailingIcon = {
                                 Icon(
                                     imageVector = Icons.Default.KeyboardArrowDown,
-                                    contentDescription = "Select Place of Supply",
-                                    modifier = Modifier.clickable { showPosSheet = true }
+                                    contentDescription = "Select Place of Supply"
                                 )
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { showPosSheet = true }
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
 
