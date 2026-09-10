@@ -60,7 +60,7 @@ class DocumentDetailViewModelTest {
         updatedAt = 1700000000000L
     )
 
-    private val sampleFinalizedInvoice = BusinessDocument(
+    private val sampleFinalizedInvoiceIntraState = BusinessDocument(
         id = "doc-fin-inv",
         documentType = DocumentType.TAX_INVOICE,
         documentNumber = "VE/10/2026-27",
@@ -121,6 +121,49 @@ class DocumentDetailViewModelTest {
         updatedAt = 1700000000000L,
         finalizedAt = 1700000000000L,
         syncStatus = SyncStatus.SYNCED
+    )
+
+    private val sampleFinalizedPoInterState = BusinessDocument(
+        id = "doc-fin-po-inter",
+        documentType = DocumentType.PURCHASE_ORDER,
+        documentNumber = "VE/PO/88/2026-27",
+        documentDate = 1700000000000L,
+        status = DocumentStatus.FINALIZED,
+        clientId = "client-1",
+        sellerSnapshot = SellerSnapshot(
+            businessName = "Vivaan Enterprise",
+            addressLine1 = "101 Trade Center",
+            addressLine2 = "Ring Road",
+            cityStatePincode = "Surat, Gujarat - 395002",
+            gstin = "24AAAAC1234A1Z5",
+            mobile = "9876543210",
+            pan = "AAAAC1234A",
+            bankAccountName = "Vivaan Enterprise",
+            bankName = "HDFC Bank",
+            bankAccountNumber = "50200012345678",
+            bankIfsc = "HDFC0001234",
+            bankBranch = "Main Branch",
+            declaration = "Goods sold are non-refundable",
+            authorisedSignatory = "Pujit Somaiya"
+        ),
+        clientSnapshot = ClientSnapshot(
+            clientId = "client-1",
+            companyName = "Interstate Supplier Corp",
+            gstin = "27CHWPG0910J1ZB",
+            state = "Maharashtra",
+            stateCode = "27"
+        ),
+        taxTreatment = TaxTreatment.INTER_STATE,
+        taxableAmountPaise = 10000000,
+        cgstAmountPaise = 0,
+        sgstAmountPaise = 0,
+        igstAmountPaise = 1800000,
+        totalTaxAmountPaise = 1800000,
+        grandTotalPaise = 11800000,
+        deliveryFactoryAddress = "Factory Location B",
+        createdAt = 1700000000000L,
+        updatedAt = 1700000000000L,
+        finalizedAt = 1700000000000L
     )
 
     private val sampleCancelledDoc = BusinessDocument(
@@ -187,8 +230,8 @@ class DocumentDetailViewModelTest {
     }
 
     @Test
-    fun load_finalizedInvoice_loadsHistoricalSnapshotsWithoutMasterSubstitution() = runTest {
-        val docRepo = FakeDocumentRepo(listOf(sampleFinalizedInvoice))
+    fun load_finalizedInvoiceIntraState_loadsHistoricalSnapshotsWithoutMasterSubstitution() = runTest {
+        val docRepo = FakeDocumentRepo(listOf(sampleFinalizedInvoiceIntraState))
         val clientRepo = FakeClientRepo(listOf(sampleClient))
 
         val savedStateHandle = SavedStateHandle(mapOf("documentId" to "doc-fin-inv"))
@@ -204,7 +247,54 @@ class DocumentDetailViewModelTest {
         assertEquals("Historical Client Name Pvt Ltd", state.clientName)
         assertEquals("Vivaan Enterprise", state.document?.sellerSnapshot?.businessName)
         assertEquals(TaxTreatment.INTRA_STATE, state.document?.taxTreatment)
+        assertEquals(2250000L, state.document?.cgstAmountPaise)
+        assertEquals(2250000L, state.document?.sgstAmountPaise)
+        assertEquals(0L, state.document?.igstAmountPaise)
         assertEquals(29500000L, state.document?.grandTotalPaise)
+    }
+
+    @Test
+    fun load_finalizedPoInterState_loadsInterStateTaxTreatment() = runTest {
+        val docRepo = FakeDocumentRepo(listOf(sampleFinalizedPoInterState))
+        val clientRepo = FakeClientRepo(listOf(sampleClient))
+
+        val savedStateHandle = SavedStateHandle(mapOf("documentId" to "doc-fin-po-inter"))
+        val viewModel = DocumentDetailViewModel(savedStateHandle, docRepo, clientRepo)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isLoading)
+        assertNotNull(state.document)
+        assertEquals(TaxTreatment.INTER_STATE, state.document?.taxTreatment)
+        assertEquals(0L, state.document?.cgstAmountPaise)
+        assertEquals(0L, state.document?.sgstAmountPaise)
+        assertEquals(1800000L, state.document?.igstAmountPaise)
+        assertEquals(11800000L, state.document?.grandTotalPaise)
+        assertEquals("Factory Location B", state.document?.deliveryFactoryAddress)
+    }
+
+    @Test
+    fun load_reactiveDraftToFinalizedTransition_updatesDetailState() = runTest {
+        val docRepo = FakeDocumentRepo(listOf(sampleDraftInvoice))
+        val clientRepo = FakeClientRepo(listOf(sampleClient))
+
+        val savedStateHandle = SavedStateHandle(mapOf("documentId" to "doc-draft-1"))
+        val viewModel = DocumentDetailViewModel(savedStateHandle, docRepo, clientRepo)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(DocumentStatus.DRAFT, viewModel.uiState.value.document?.status)
+
+        // Emit updated finalized document over repository flow
+        val finalizedDoc = sampleDraftInvoice.copy(
+            status = DocumentStatus.FINALIZED,
+            clientSnapshot = ClientSnapshot(clientId = "client-1", companyName = "Finalized Snapshot Name")
+        )
+        docRepo.docFlow.value = finalizedDoc
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val updatedState = viewModel.uiState.value
+        assertEquals(DocumentStatus.FINALIZED, updatedState.document?.status)
+        assertEquals("Finalized Snapshot Name", updatedState.clientName)
     }
 
     @Test
@@ -237,13 +327,13 @@ class DocumentDetailViewModelTest {
         assertEquals(DocumentStatus.CANCELLED, state.document?.status)
     }
 
-    private class FakeDocumentRepo(initialDocs: List<BusinessDocument>) : DocumentRepository {
-        val docsFlow = MutableStateFlow(initialDocs)
-        override fun observeAllDocuments(): Flow<List<BusinessDocument>> = docsFlow
-        override fun observeDocumentById(id: String): Flow<BusinessDocument?> = MutableStateFlow(docsFlow.value.firstOrNull { it.id == id })
-        override fun observeDocumentsByType(type: DocumentType): Flow<List<BusinessDocument>> = MutableStateFlow(docsFlow.value.filter { it.documentType == type })
-        override fun observeDocumentsByClient(clientId: String): Flow<List<BusinessDocument>> = MutableStateFlow(docsFlow.value.filter { it.clientId == clientId })
-        override suspend fun getDocumentById(id: String): BusinessDocument? = docsFlow.value.firstOrNull { it.id == id }
+    private class FakeDocumentRepo(private val initialDocs: List<BusinessDocument>) : DocumentRepository {
+        val docFlow = MutableStateFlow(initialDocs.firstOrNull())
+        override fun observeAllDocuments(): Flow<List<BusinessDocument>> = MutableStateFlow(initialDocs)
+        override fun observeDocumentById(id: String): Flow<BusinessDocument?> = docFlow
+        override fun observeDocumentsByType(type: DocumentType): Flow<List<BusinessDocument>> = MutableStateFlow(initialDocs.filter { it.documentType == type })
+        override fun observeDocumentsByClient(clientId: String): Flow<List<BusinessDocument>> = MutableStateFlow(initialDocs.filter { it.clientId == clientId })
+        override suspend fun getDocumentById(id: String): BusinessDocument? = docFlow.value
         override suspend fun getLineItemsForDocument(documentId: String): List<DocumentLineItem> = emptyList()
         override suspend fun suggestDocumentNumber(type: DocumentType, documentDate: Long): String = "VE/01/2026-27"
         override suspend fun createDraft(type: DocumentType, clientId: String, documentDate: Long, documentNumber: String?, lineItems: List<DocumentLineItem>, placeOfSupply: String?, deliveryFactoryAddress: String?, paymentTerms: String?, deliveryNote: String?, supplierReference: String?, otherReferences: String?, buyerOrderNumber: String?, buyerOrderDate: Long?, dispatchDocumentNumber: String?, deliveryNoteDate: Long?, dispatchThrough: String?, destination: String?, termsOfDelivery: String?): Result<BusinessDocument> = TODO()

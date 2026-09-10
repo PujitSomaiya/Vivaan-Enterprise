@@ -24,7 +24,8 @@ data class DocumentListItemUiModel(
     val status: DocumentStatus,
     val clientDisplayName: String,
     val grandTotalPaise: Long,
-    val syncStatus: SyncStatus
+    val syncStatus: SyncStatus,
+    val updatedAt: Long = 0L
 )
 
 data class DocumentsUiState(

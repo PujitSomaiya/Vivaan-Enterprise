@@ -19,7 +19,7 @@ interface BusinessDocumentDao {
     @Query("SELECT * FROM business_documents WHERE id = :id AND isDeleted = 0")
     fun observeById(id: String): Flow<BusinessDocumentEntity?>
 
-    @Query("SELECT * FROM business_documents WHERE isDeleted = 0 ORDER BY documentDate DESC, createdAt DESC")
+    @Query("SELECT * FROM business_documents WHERE isDeleted = 0 ORDER BY documentDate DESC, updatedAt DESC, id DESC")
     fun observeAllDocuments(): Flow<List<BusinessDocumentEntity>>
 
     @Query("SELECT * FROM business_documents WHERE documentType = :type AND isDeleted = 0 ORDER BY documentDate DESC, createdAt DESC")

@@ -47,6 +47,32 @@ class DocumentsViewModelTest {
         syncStatus = SyncStatus.PENDING
     )
 
+    private val sampleInvoiceFinalized = BusinessDocument(
+        id = "doc-inv-2",
+        documentType = DocumentType.TAX_INVOICE,
+        documentNumber = "VE/02/2026-27",
+        documentDate = 1705000000000L,
+        status = DocumentStatus.FINALIZED,
+        clientId = "client-1",
+        clientSnapshot = ClientSnapshot(clientId = "client-1", companyName = "Acme Corp Snapshot"),
+        grandTotalPaise = 2500000L,
+        createdAt = 1705000000000L,
+        updatedAt = 1705000000000L,
+        syncStatus = SyncStatus.SYNCED
+    )
+
+    private val samplePoDraft = BusinessDocument(
+        id = "doc-po-1",
+        documentType = DocumentType.PURCHASE_ORDER,
+        documentNumber = "VE/PO/01/2026-27",
+        documentDate = 1700000000000L,
+        status = DocumentStatus.DRAFT,
+        clientId = "client-2",
+        createdAt = 1700000000000L,
+        updatedAt = 1700000500000L, // Newer updatedAt for tie-breaker test
+        syncStatus = SyncStatus.PENDING
+    )
+
     private val samplePoFinalized = BusinessDocument(
         id = "doc-po-2",
         documentType = DocumentType.PURCHASE_ORDER,
@@ -67,6 +93,13 @@ class DocumentsViewModelTest {
     private val sampleClient1 = Client(
         id = "client-1",
         companyName = "Acme Corp",
+        createdAt = 1700000000000L,
+        updatedAt = 1700000000000L
+    )
+
+    private val sampleClient2 = Client(
+        id = "client-2",
+        companyName = "Apex Supplies Pvt Ltd",
         createdAt = 1700000000000L,
         updatedAt = 1700000000000L
     )
@@ -96,6 +129,22 @@ class DocumentsViewModelTest {
 
         // samplePoFinalized date (1710000000000) > sampleInvoiceDraft date (1700000000000)
         assertEquals("doc-po-2", state.documents[0].id)
+        assertEquals("doc-inv-1", state.documents[1].id)
+    }
+
+    @Test
+    fun load_equalDocumentDate_usesUpdatedAtAndIdTieBreaker() = runTest {
+        // Both sampleInvoiceDraft and samplePoDraft have documentDate = 1700000000000L
+        // samplePoDraft has newer updatedAt = 1700000500000L
+        val docRepo = FakeDocumentRepo(listOf(sampleInvoiceDraft, samplePoDraft))
+        val clientRepo = FakeClientRepo(listOf(sampleClient1, sampleClient2))
+
+        val viewModel = DocumentsViewModel(docRepo, clientRepo)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(2, state.documents.size)
+        assertEquals("doc-po-1", state.documents[0].id)
         assertEquals("doc-inv-1", state.documents[1].id)
     }
 
@@ -197,7 +246,42 @@ class DocumentsViewModelTest {
     }
 
     @Test
-    fun combinedFiltersAndSearch_workTogether() = runTest {
+    fun combinedTypeAndStatusFilters_filterExhaustively() = runTest {
+        val docRepo = FakeDocumentRepo(listOf(sampleInvoiceDraft, sampleInvoiceFinalized, samplePoDraft, samplePoFinalized))
+        val clientRepo = FakeClientRepo(listOf(sampleClient1, sampleClient2))
+
+        val viewModel = DocumentsViewModel(docRepo, clientRepo)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // TAX_INVOICE + DRAFT
+        viewModel.onTypeFilterSelected(DocumentTypeFilter.TAX_INVOICE)
+        viewModel.onStatusFilterSelected(DocumentStatusFilter.DRAFT)
+        val invDraft = viewModel.uiState.value.filteredDocuments
+        assertEquals(1, invDraft.size)
+        assertEquals("doc-inv-1", invDraft[0].id)
+
+        // TAX_INVOICE + FINALIZED
+        viewModel.onStatusFilterSelected(DocumentStatusFilter.FINALIZED)
+        val invFin = viewModel.uiState.value.filteredDocuments
+        assertEquals(1, invFin.size)
+        assertEquals("doc-inv-2", invFin[0].id)
+
+        // PURCHASE_ORDER + DRAFT
+        viewModel.onTypeFilterSelected(DocumentTypeFilter.PURCHASE_ORDER)
+        viewModel.onStatusFilterSelected(DocumentStatusFilter.DRAFT)
+        val poDraft = viewModel.uiState.value.filteredDocuments
+        assertEquals(1, poDraft.size)
+        assertEquals("doc-po-1", poDraft[0].id)
+
+        // PURCHASE_ORDER + FINALIZED
+        viewModel.onStatusFilterSelected(DocumentStatusFilter.FINALIZED)
+        val poFin = viewModel.uiState.value.filteredDocuments
+        assertEquals(1, poFin.size)
+        assertEquals("doc-po-2", poFin[0].id)
+    }
+
+    @Test
+    fun combinedSearchAndFilters_workTogether() = runTest {
         val docRepo = FakeDocumentRepo(listOf(sampleInvoiceDraft, samplePoFinalized))
         val clientRepo = FakeClientRepo(listOf(sampleClient1))
 

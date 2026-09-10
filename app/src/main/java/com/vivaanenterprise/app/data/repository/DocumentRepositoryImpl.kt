@@ -59,8 +59,7 @@ class DocumentRepositoryImpl @Inject constructor(
     override fun observeAllDocuments(): Flow<List<BusinessDocument>> {
         return documentDao.observeAllDocuments().map { list ->
             list.map { entity ->
-                val lineItems = lineItemDao.getByDocumentId(entity.id).map { item -> item.toDomain() }
-                entity.toDomain(lineItems)
+                entity.toDomain(emptyList())
             }
         }
     }

@@ -74,10 +74,12 @@ class DocumentsViewModel @Inject constructor(
                         status = doc.status,
                         clientDisplayName = clientDisplayName,
                         grandTotalPaise = doc.grandTotalPaise,
-                        syncStatus = doc.syncStatus
+                        syncStatus = doc.syncStatus,
+                        updatedAt = doc.updatedAt
                     )
                 }.sortedWith(
                     compareByDescending<DocumentListItemUiModel> { it.documentDate }
+                        .thenByDescending { it.updatedAt }
                         .thenByDescending { it.id }
                 )
 
