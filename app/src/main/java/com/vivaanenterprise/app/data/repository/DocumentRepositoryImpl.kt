@@ -222,20 +222,17 @@ class DocumentRepositoryImpl @Inject constructor(
     }
 
     override suspend fun finalizeDocument(
-        documentId: String,
-        overrideDocumentNumber: String?
+        input: com.vivaanenterprise.app.domain.model.DocumentFinalizationInput
     ): DocumentFinalizationResult {
         try {
-            val documentEntity = documentDao.getById(documentId)
-                ?: return DocumentFinalizationResult.Failure(IllegalArgumentException("Document not found"))
+            val docId = input.documentId ?: idGenerator.newId()
+            val existingDoc = if (input.documentId != null) documentDao.getById(input.documentId) else null
 
-            if (documentEntity.status != DocumentStatus.DRAFT) {
+            if (existingDoc != null && existingDoc.status != DocumentStatus.DRAFT) {
                 return DocumentFinalizationResult.Invalid(listOf(DocumentValidationError.DocumentNotDraft))
             }
 
-            val docNumber = overrideDocumentNumber?.trim()?.ifBlank { null }
-                ?: documentEntity.documentNumber.trim()
-
+            val docNumber = input.documentNumber.trim()
             val errors = mutableListOf<DocumentValidationError>()
 
             if (docNumber.isBlank()) {
@@ -243,8 +240,8 @@ class DocumentRepositoryImpl @Inject constructor(
             }
 
             // Duplicate document number check
-            val duplicate = documentDao.findByDocumentTypeAndNumber(documentEntity.documentType, docNumber)
-            if (duplicate != null && duplicate.id != documentId) {
+            val duplicate = documentDao.findByDocumentTypeAndNumber(input.documentType, docNumber)
+            if (duplicate != null && duplicate.id != docId) {
                 errors.add(DocumentValidationError.DuplicateDocumentNumber)
             }
 
@@ -255,22 +252,21 @@ class DocumentRepositoryImpl @Inject constructor(
             }
 
             // Client check
-            val clientEntity = clientDao.getById(documentEntity.clientId)
+            val clientEntity = clientDao.getById(input.clientId)
             if (clientEntity == null) {
                 errors.add(DocumentValidationError.MissingClient)
             } else if (clientEntity.isDeleted) {
                 errors.add(DocumentValidationError.ClientDeleted)
             }
 
-            // Place-of-supply check (must be a two-digit numeric state code)
-            val placeOfSupplyCode = documentEntity.placeOfSupply?.trim()
+            // Place-of-supply check
+            val placeOfSupplyCode = input.placeOfSupply?.trim()
             if (placeOfSupplyCode.isNullOrBlank()) {
                 errors.add(DocumentValidationError.MissingPlaceOfSupply)
             }
 
             // Line items check
-            val lineItemEntities = lineItemDao.getByDocumentId(documentId)
-            if (lineItemEntities.isEmpty()) {
+            if (input.lineItems.isEmpty()) {
                 errors.add(DocumentValidationError.NoLineItems)
             }
 
@@ -278,13 +274,12 @@ class DocumentRepositoryImpl @Inject constructor(
                 return DocumentFinalizationResult.Invalid(errors)
             }
 
-            // Seller state code is taken directly from seller profile stateCode.
             val sellerStateCode = sellerEntity!!.stateCode ?: ""
 
             val calcInput = DocumentCalculationInput(
                 sellerStateCode = sellerStateCode,
                 placeOfSupplyStateCode = placeOfSupplyCode!!,
-                lines = lineItemEntities.map { item ->
+                lines = input.lineItems.map { item ->
                     DocumentCalculationInput.LineInput(
                         id = item.id,
                         quantity = item.quantity,
@@ -311,18 +306,15 @@ class DocumentRepositoryImpl @Inject constructor(
 
             val calculationResult = calcOutcome.getOrThrow()
 
-            // ── Product snapshot freezing + line item persistence ─────────────────
             val now = timeProvider.currentTimeMillis()
-            val fy  = FinancialYearResolver.resolveFinancialYear(documentEntity.documentDate)
+            val fy  = FinancialYearResolver.resolveFinancialYear(input.documentDate)
 
             val sellerSnapshot = sellerEntity.toSellerSnapshot()
             val clientSnapshot = clientEntity!!.toClientSnapshot()
 
             val calcLineMap = calculationResult.lineCalculations.associateBy { it.lineItemId }
 
-            // Freeze Product master details onto line item snapshots at finalization time.
-            // Historical documents must render from these frozen values, not current master data.
-            val finalizedLineItems = lineItemEntities.map { item ->
+            val finalizedLineItems = input.lineItems.mapIndexed { idx, item ->
                 val lineCalc = calcLineMap[item.id]
                 var desc = item.descriptionSnapshot
                 var hsn  = item.hsnSacSnapshot
@@ -337,23 +329,48 @@ class DocumentRepositoryImpl @Inject constructor(
                     }
                 }
 
-                item.copy(
+                val lineEntityId = if (item.id.isBlank()) idGenerator.newId() else item.id
+                com.vivaanenterprise.app.core.database.entity.DocumentLineItemEntity(
+                    id                  = lineEntityId,
+                    documentId          = docId,
+                    productId           = item.productId,
+                    position            = idx,
                     descriptionSnapshot = desc,
                     hsnSacSnapshot      = hsn,
+                    quantity            = item.quantity,
+                    ratePaise           = item.ratePaise,
                     gstRateBasisPoints  = gst,
-                    taxableAmountPaise  = lineCalc?.taxableAmountPaise ?: item.taxableAmountPaise,
-                    cgstAmountPaise     = lineCalc?.cgstAmountPaise    ?: item.cgstAmountPaise,
-                    sgstAmountPaise     = lineCalc?.sgstAmountPaise    ?: item.sgstAmountPaise,
-                    igstAmountPaise     = lineCalc?.igstAmountPaise    ?: item.igstAmountPaise,
-                    totalTaxPaise       = lineCalc?.totalTaxPaise      ?: item.totalTaxPaise,
-                    lineTotalPaise      = lineCalc?.lineTotalPaise     ?: item.lineTotalPaise,
-                    updatedAt = now
+                    taxableAmountPaise  = lineCalc?.taxableAmountPaise ?: 0L,
+                    cgstAmountPaise     = lineCalc?.cgstAmountPaise ?: 0L,
+                    sgstAmountPaise     = lineCalc?.sgstAmountPaise ?: 0L,
+                    igstAmountPaise     = lineCalc?.igstAmountPaise ?: 0L,
+                    totalTaxPaise       = lineCalc?.totalTaxPaise ?: 0L,
+                    lineTotalPaise      = lineCalc?.lineTotalPaise ?: 0L,
+                    createdAt           = if (item.createdAt <= 0L) now else item.createdAt,
+                    updatedAt           = now
                 )
             }
 
-            val finalizedDoc = documentEntity.copy(
+            val finalizedDoc = com.vivaanenterprise.app.core.database.entity.BusinessDocumentEntity(
+                id                               = docId,
+                documentType                     = input.documentType,
                 documentNumber                   = docNumber,
+                documentDate                     = input.documentDate,
                 status                           = DocumentStatus.FINALIZED,
+                clientId                         = input.clientId,
+                deliveryNote                     = input.deliveryNote,
+                deliveryFactoryAddress           = input.deliveryFactoryAddress,
+                paymentTerms                     = input.paymentTerms,
+                supplierReference               = input.supplierReference,
+                otherReferences                  = input.otherReferences,
+                buyerOrderNumber                 = input.buyerOrderNumber,
+                buyerOrderDate                   = input.buyerOrderDate,
+                dispatchDocumentNumber           = input.dispatchDocumentNumber,
+                deliveryNoteDate                 = input.deliveryNoteDate,
+                dispatchThrough                  = input.dispatchThrough,
+                destination                      = input.destination,
+                termsOfDelivery                  = input.termsOfDelivery,
+                placeOfSupply                    = input.placeOfSupply,
                 sellerBusinessNameSnapshot       = sellerSnapshot.businessName,
                 sellerAddressLine1Snapshot       = sellerSnapshot.addressLine1,
                 sellerAddressLine2Snapshot       = sellerSnapshot.addressLine2,
@@ -388,8 +405,12 @@ class DocumentRepositoryImpl @Inject constructor(
                 grandTotalPaise                  = calculationResult.grandTotalPaise,
                 amountInWords                    = calculationResult.amountInWords,
                 taxAmountInWords                 = calculationResult.taxAmountInWords,
+                createdAt                        = existingDoc?.createdAt ?: now,
                 updatedAt                        = now,
                 finalizedAt                      = now,
+                cancelledAt                      = null,
+                isDeleted                        = false,
+                deletedAt                        = null,
                 syncStatus                       = SyncStatus.PENDING
             )
 
@@ -398,14 +419,15 @@ class DocumentRepositoryImpl @Inject constructor(
                 documentDao.upsert(finalizedDoc)
 
                 // 2. Persist frozen line item snapshots with calculated values
+                lineItemDao.deleteByDocumentId(docId)
                 lineItemDao.upsertAll(finalizedLineItems)
 
                 // 3. Advance document sequence counter for this type and financial year
-                val currentSeqEntity = sequenceDao.getSequence(documentEntity.documentType, fy)
+                val currentSeqEntity = sequenceDao.getSequence(input.documentType, fy)
                 val newSeqNum = (currentSeqEntity?.lastSequenceNumber ?: 0) + 1
                 sequenceDao.upsert(
                     DocumentSequenceEntity(
-                        documentType       = documentEntity.documentType,
+                        documentType       = input.documentType,
                         financialYear      = fy,
                         lastSequenceNumber = newSeqNum,
                         updatedAt          = now
@@ -413,15 +435,15 @@ class DocumentRepositoryImpl @Inject constructor(
                 )
 
                 // 4. Create client account entry for TAX_INVOICE only (not PURCHASE_ORDER)
-                if (documentEntity.documentType == DocumentType.TAX_INVOICE) {
-                    val existingAccountEntry = accountEntryDao.findByDocumentId(documentId)
+                if (input.documentType == DocumentType.TAX_INVOICE) {
+                    val existingAccountEntry = accountEntryDao.findByDocumentId(docId)
                     if (existingAccountEntry == null) {
                         val accountEntry = ClientAccountEntryEntity(
                             id          = idGenerator.newId(),
-                            clientId    = documentEntity.clientId,
-                            documentId  = documentId,
+                            clientId    = input.clientId,
+                            documentId  = docId,
                             entryType   = AccountEntryType.INVOICE,
-                            entryDate   = documentEntity.documentDate,
+                            entryDate   = input.documentDate,
                             amountPaise = calculationResult.grandTotalPaise,
                             narration   = "Tax Invoice #${docNumber}",
                             createdAt   = now,
@@ -443,6 +465,37 @@ class DocumentRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             return DocumentFinalizationResult.Failure(e)
         }
+    }
+
+    override suspend fun finalizeDocument(
+        documentId: String,
+        overrideDocumentNumber: String?
+    ): DocumentFinalizationResult {
+        val existingDoc = getDocumentById(documentId)
+            ?: return DocumentFinalizationResult.Failure(IllegalArgumentException("Document not found"))
+
+        val input = com.vivaanenterprise.app.domain.model.DocumentFinalizationInput(
+            documentId = documentId,
+            documentType = existingDoc.documentType,
+            documentNumber = overrideDocumentNumber?.trim()?.ifBlank { null } ?: existingDoc.documentNumber,
+            documentDate = existingDoc.documentDate,
+            clientId = existingDoc.clientId,
+            placeOfSupply = existingDoc.placeOfSupply,
+            deliveryFactoryAddress = existingDoc.deliveryFactoryAddress,
+            lineItems = existingDoc.lineItems,
+            paymentTerms = existingDoc.paymentTerms,
+            deliveryNote = existingDoc.deliveryNote,
+            supplierReference = existingDoc.supplierReference,
+            otherReferences = existingDoc.otherReferences,
+            buyerOrderNumber = existingDoc.buyerOrderNumber,
+            buyerOrderDate = existingDoc.buyerOrderDate,
+            dispatchDocumentNumber = existingDoc.dispatchDocumentNumber,
+            deliveryNoteDate = existingDoc.deliveryNoteDate,
+            dispatchThrough = existingDoc.dispatchThrough,
+            destination = existingDoc.destination,
+            termsOfDelivery = existingDoc.termsOfDelivery
+        )
+        return finalizeDocument(input)
     }
 
     override suspend fun cancelDocument(documentId: String): Result<Unit> {

@@ -6,6 +6,7 @@ import com.vivaanenterprise.app.core.common.SyncStatus
 import com.vivaanenterprise.app.domain.model.BusinessDocument
 import com.vivaanenterprise.app.domain.model.Client
 import com.vivaanenterprise.app.domain.model.ClientSnapshot
+import com.vivaanenterprise.app.domain.model.DocumentFinalizationInput
 import com.vivaanenterprise.app.domain.model.DocumentFinalizationResult
 import com.vivaanenterprise.app.domain.model.DocumentLineItem
 import com.vivaanenterprise.app.domain.repository.ClientRepository
@@ -331,6 +332,7 @@ class DocumentsViewModelTest {
         override suspend fun createDraft(type: DocumentType, clientId: String, documentDate: Long, documentNumber: String?, lineItems: List<DocumentLineItem>, placeOfSupply: String?, deliveryFactoryAddress: String?, paymentTerms: String?, deliveryNote: String?, supplierReference: String?, otherReferences: String?, buyerOrderNumber: String?, buyerOrderDate: Long?, dispatchDocumentNumber: String?, deliveryNoteDate: Long?, dispatchThrough: String?, destination: String?, termsOfDelivery: String?): Result<BusinessDocument> = TODO()
         override suspend fun updateDraft(document: BusinessDocument, lineItems: List<DocumentLineItem>): Result<BusinessDocument> = TODO()
         override suspend fun finalizeDocument(documentId: String, overrideDocumentNumber: String?): DocumentFinalizationResult = TODO()
+        override suspend fun finalizeDocument(input: DocumentFinalizationInput): DocumentFinalizationResult = TODO()
         override suspend fun cancelDocument(documentId: String): Result<Unit> = TODO()
         override suspend fun deleteDocument(documentId: String): Result<Unit> = Result.success(Unit)
     }
@@ -350,6 +352,7 @@ class DocumentsViewModelTest {
         override suspend fun createDraft(type: DocumentType, clientId: String, documentDate: Long, documentNumber: String?, lineItems: List<DocumentLineItem>, placeOfSupply: String?, deliveryFactoryAddress: String?, paymentTerms: String?, deliveryNote: String?, supplierReference: String?, otherReferences: String?, buyerOrderNumber: String?, buyerOrderDate: Long?, dispatchDocumentNumber: String?, deliveryNoteDate: Long?, dispatchThrough: String?, destination: String?, termsOfDelivery: String?): Result<BusinessDocument> = TODO()
         override suspend fun updateDraft(document: BusinessDocument, lineItems: List<DocumentLineItem>): Result<BusinessDocument> = TODO()
         override suspend fun finalizeDocument(documentId: String, overrideDocumentNumber: String?): DocumentFinalizationResult = TODO()
+        override suspend fun finalizeDocument(input: DocumentFinalizationInput): DocumentFinalizationResult = TODO()
         override suspend fun cancelDocument(documentId: String): Result<Unit> = TODO()
         override suspend fun deleteDocument(documentId: String): Result<Unit> = Result.failure(RuntimeException("Error"))
     }

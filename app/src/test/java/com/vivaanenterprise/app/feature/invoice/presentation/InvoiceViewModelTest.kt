@@ -7,6 +7,7 @@ import com.vivaanenterprise.app.core.common.SyncStatus
 import com.vivaanenterprise.app.domain.model.BusinessDocument
 import com.vivaanenterprise.app.domain.model.BusinessProfile
 import com.vivaanenterprise.app.domain.model.Client
+import com.vivaanenterprise.app.domain.model.DocumentFinalizationInput
 import com.vivaanenterprise.app.domain.model.DocumentFinalizationResult
 import com.vivaanenterprise.app.domain.model.DocumentLineItem
 import com.vivaanenterprise.app.domain.model.DocumentValidationError
@@ -515,7 +516,7 @@ class InvoiceViewModelTest {
 
         assertEquals(1, effects.size)
         assertTrue(effects.first() is InvoiceUiEffect.NavigateSuccess)
-        assertEquals("doc-1", (effects.first() as InvoiceUiEffect.NavigateSuccess).documentId)
+        assertEquals("doc-finalized-1", (effects.first() as InvoiceUiEffect.NavigateSuccess).documentId)
         job.cancel()
     }
 
@@ -569,7 +570,7 @@ class InvoiceViewModelTest {
         viewModel.onIntent(InvoiceUiIntent.OnConfirmFinalize)
         testScheduler.advanceUntilIdle()
 
-        val savedDoc = fakeDocumentRepository.storedDocs["doc-1"]
+        val savedDoc = fakeDocumentRepository.storedDocs["doc-finalized-1"] ?: fakeDocumentRepository.storedDocs["doc-1"]
         assertNotNull(savedDoc)
         assertEquals("Updated Delivery Note", savedDoc?.deliveryNote)
         assertEquals("Net 30", savedDoc?.paymentTerms)
@@ -630,7 +631,7 @@ class InvoiceViewModelTest {
         viewModel.onIntent(InvoiceUiIntent.OnConfirmFinalize)
         testScheduler.advanceUntilIdle()
 
-        val savedDoc = fakeDocumentRepository.storedDocs["doc-1"]
+        val savedDoc = fakeDocumentRepository.storedDocs["doc-finalized-1"] ?: fakeDocumentRepository.storedDocs["doc-1"]
         assertNotNull(savedDoc)
         assertEquals("Persisted Invoice Address", savedDoc?.deliveryFactoryAddress)
     }
@@ -732,24 +733,52 @@ class InvoiceViewModelTest {
             return Result.success(document)
         }
 
+        var lastFinalizeInput: DocumentFinalizationInput? = null
+
         override suspend fun finalizeDocument(
             documentId: String,
             overrideDocumentNumber: String?
         ): DocumentFinalizationResult {
             finalizeCalls++
             finalizeResultOverride?.let { return it }
-            val doc = BusinessDocument(
-                id = documentId,
-                documentType = DocumentType.TAX_INVOICE,
-                documentNumber = overrideDocumentNumber ?: "VE/01/2023-24",
-                documentDate = 1000L,
+            val existing = storedDocs[documentId] ?: return DocumentFinalizationResult.Failure(Exception("Document not found"))
+            val finalized = existing.copy(status = DocumentStatus.FINALIZED)
+            storedDocs[documentId] = finalized
+            return DocumentFinalizationResult.Success(finalized)
+        }
+
+        override suspend fun finalizeDocument(input: DocumentFinalizationInput): DocumentFinalizationResult {
+            finalizeCalls++
+            lastFinalizeInput = input
+            finalizeResultOverride?.let { return it }
+            val docId = input.documentId ?: "doc-finalized-1"
+            val finalized = BusinessDocument(
+                id = docId,
+                documentType = input.documentType,
+                documentNumber = input.documentNumber,
+                documentDate = input.documentDate,
                 status = DocumentStatus.FINALIZED,
-                clientId = "client-1",
+                clientId = input.clientId,
+                lineItems = input.lineItems,
+                placeOfSupply = input.placeOfSupply,
+                deliveryFactoryAddress = input.deliveryFactoryAddress,
+                paymentTerms = input.paymentTerms,
+                deliveryNote = input.deliveryNote,
+                supplierReference = input.supplierReference,
+                otherReferences = input.otherReferences,
+                buyerOrderNumber = input.buyerOrderNumber,
+                buyerOrderDate = input.buyerOrderDate,
+                dispatchDocumentNumber = input.dispatchDocumentNumber,
+                deliveryNoteDate = input.deliveryNoteDate,
+                dispatchThrough = input.dispatchThrough,
+                destination = input.destination,
+                termsOfDelivery = input.termsOfDelivery,
                 createdAt = 1000L,
                 updatedAt = 1000L,
                 syncStatus = SyncStatus.PENDING
             )
-            return DocumentFinalizationResult.Success(doc)
+            storedDocs[docId] = finalized
+            return DocumentFinalizationResult.Success(finalized)
         }
 
         override suspend fun cancelDocument(documentId: String): Result<Unit> = Result.success(Unit)

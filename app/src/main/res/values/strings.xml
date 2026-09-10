@@ -146,5 +146,9 @@
     <string name="view_document_action">View Document</string>
     <string name="dashboard_finalized_invoices_label">Finalized Invoices</string>
     <string name="dashboard_total_billed_label">Total Billed</string>
+
+    <!-- PDF Viewer String Resources -->
+    <string name="action_share_pdf">Share PDF</string>
+    <string name="action_save_pdf">Save PDF to Downloads</string>
 </resources>
 

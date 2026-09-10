@@ -19,7 +19,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -44,11 +44,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.vivaanenterprise.app.R
 import com.vivaanenterprise.app.core.common.DocumentType
 import com.vivaanenterprise.app.core.designsystem.component.AppErrorState
 import com.vivaanenterprise.app.core.designsystem.component.AppLoadingState
@@ -138,7 +140,7 @@ fun PdfViewerScreen(
                         } else {
                             Icon(
                                 imageVector = Icons.Default.Share,
-                                contentDescription = "Share PDF",
+                                contentDescription = stringResource(R.string.action_share_pdf),
                                 tint = AppTheme.colorScheme.onSurface
                             )
                         }
@@ -155,8 +157,8 @@ fun PdfViewerScreen(
                             )
                         } else {
                             Icon(
-                                imageVector = Icons.Default.Done,
-                                contentDescription = "Save PDF",
+                                imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                                contentDescription = stringResource(R.string.action_save_pdf),
                                 tint = AppTheme.colorScheme.onSurface
                             )
                         }

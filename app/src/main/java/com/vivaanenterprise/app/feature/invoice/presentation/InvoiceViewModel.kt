@@ -598,100 +598,52 @@ class InvoiceViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                // Ensure draft is saved first if NEW or dirty
-                var targetDocId = state.documentId
-                if (targetDocId == null || state.isDirty) {
-                    val domainLineItems = state.lineItems.mapIndexed { idx, line ->
-                        val prod = line.selectedProduct ?: throw IllegalStateException("Product missing")
-                        val ratePaise = ExactCurrencyParser.parseToPaise(line.rateInput) ?: throw IllegalStateException("Rate invalid")
-                        DocumentLineItem(
-                            id = line.id,
-                            documentId = targetDocId ?: "",
-                            productId = prod.id,
-                            position = idx,
-                            descriptionSnapshot = prod.name,
-                            hsnSacSnapshot = prod.hsnSac,
-                            quantity = line.quantityInput.toLong(),
-                            ratePaise = ratePaise,
-                            gstRateBasisPoints = prod.defaultGstRateBasisPoints,
-                            createdAt = System.currentTimeMillis(),
-                            updatedAt = System.currentTimeMillis()
-                        )
-                    }
-                    val draftResult = if (targetDocId == null) {
-                        documentRepository.createDraft(
-                            type = DocumentType.TAX_INVOICE,
-                            clientId = client.id,
-                            documentDate = state.documentDate,
-                            documentNumber = state.documentNumber,
-                            lineItems = domainLineItems,
-                            placeOfSupply = state.placeOfSupplyStateCode,
-                            deliveryFactoryAddress = state.deliveryFactoryAddress.ifBlank { null },
-                            paymentTerms = state.paymentTerms.ifBlank { null },
-                            deliveryNote = state.deliveryNote.ifBlank { null },
-                            supplierReference = state.supplierReference.ifBlank { null },
-                            otherReferences = state.otherReferences.ifBlank { null },
-                            buyerOrderNumber = state.buyerOrderNumber.ifBlank { null },
-                            buyerOrderDate = state.buyerOrderDate,
-                            dispatchDocumentNumber = state.dispatchDocumentNumber.ifBlank { null },
-                            deliveryNoteDate = state.deliveryNoteDate,
-                            dispatchThrough = state.dispatchThrough.ifBlank { null },
-                            destination = state.destination.ifBlank { null },
-                            termsOfDelivery = state.termsOfDelivery.ifBlank { null }
-                        )
-                    } else {
-                        val existingDoc = documentRepository.getDocumentById(targetDocId)
-                        if (existingDoc == null) {
-                            _uiState.update { it.copy(isFinalizing = false, generalError = "Draft invoice not found") }
-                            return@launch
-                        }
-                        val updatedDoc = existingDoc.copy(
-                            documentNumber = state.documentNumber,
-                            documentDate = state.documentDate,
-                            clientId = client.id,
-                            placeOfSupply = state.placeOfSupplyStateCode,
-                            deliveryFactoryAddress = state.deliveryFactoryAddress.ifBlank { null },
-                            paymentTerms = state.paymentTerms.ifBlank { null },
-                            deliveryNote = state.deliveryNote.ifBlank { null },
-                            supplierReference = state.supplierReference.ifBlank { null },
-                            otherReferences = state.otherReferences.ifBlank { null },
-                            buyerOrderNumber = state.buyerOrderNumber.ifBlank { null },
-                            buyerOrderDate = state.buyerOrderDate,
-                            dispatchDocumentNumber = state.dispatchDocumentNumber.ifBlank { null },
-                            deliveryNoteDate = state.deliveryNoteDate,
-                            dispatchThrough = state.dispatchThrough.ifBlank { null },
-                            destination = state.destination.ifBlank { null },
-                            termsOfDelivery = state.termsOfDelivery.ifBlank { null }
-                        )
-                        val updateResult = documentRepository.updateDraft(updatedDoc, domainLineItems)
-                        if (updateResult.isFailure) {
-                            _uiState.update { it.copy(isFinalizing = false, generalError = "Unable to save draft before finalization") }
-                            return@launch
-                        }
-                        Result.success(updatedDoc)
-                    }
-
-                    if (draftResult.isFailure) {
-                        _uiState.update { it.copy(isFinalizing = false, generalError = "Unable to save draft before finalization") }
-                        return@launch
-                    }
-                    targetDocId = draftResult.getOrThrow().id
+                val domainLineItems = state.lineItems.mapIndexed { idx, line ->
+                    val prod = line.selectedProduct ?: throw IllegalStateException("Product missing")
+                    val ratePaise = ExactCurrencyParser.parseToPaise(line.rateInput) ?: throw IllegalStateException("Rate invalid")
+                    DocumentLineItem(
+                        id = line.id,
+                        documentId = state.documentId ?: "",
+                        productId = prod.id,
+                        position = idx,
+                        descriptionSnapshot = prod.name,
+                        hsnSacSnapshot = prod.hsnSac,
+                        quantity = line.quantityInput.toLong(),
+                        ratePaise = ratePaise,
+                        gstRateBasisPoints = prod.defaultGstRateBasisPoints,
+                        createdAt = System.currentTimeMillis(),
+                        updatedAt = System.currentTimeMillis()
+                    )
                 }
 
-                val docIdToFinalize = targetDocId ?: run {
-                    _uiState.update { it.copy(isFinalizing = false, generalError = "Target document ID unavailable") }
-                    return@launch
-                }
-
-                val finalizationResult = documentRepository.finalizeDocument(
-                    documentId = docIdToFinalize,
-                    overrideDocumentNumber = state.documentNumber
+                val input = com.vivaanenterprise.app.domain.model.DocumentFinalizationInput(
+                    documentId = state.documentId,
+                    documentType = DocumentType.TAX_INVOICE,
+                    documentNumber = state.documentNumber,
+                    documentDate = state.documentDate,
+                    clientId = client.id,
+                    placeOfSupply = state.placeOfSupplyStateCode,
+                    deliveryFactoryAddress = state.deliveryFactoryAddress.ifBlank { null },
+                    lineItems = domainLineItems,
+                    paymentTerms = state.paymentTerms.ifBlank { null },
+                    deliveryNote = state.deliveryNote.ifBlank { null },
+                    supplierReference = state.supplierReference.ifBlank { null },
+                    otherReferences = state.otherReferences.ifBlank { null },
+                    buyerOrderNumber = state.buyerOrderNumber.ifBlank { null },
+                    buyerOrderDate = state.buyerOrderDate,
+                    dispatchDocumentNumber = state.dispatchDocumentNumber.ifBlank { null },
+                    deliveryNoteDate = state.deliveryNoteDate,
+                    dispatchThrough = state.dispatchThrough.ifBlank { null },
+                    destination = state.destination.ifBlank { null },
+                    termsOfDelivery = state.termsOfDelivery.ifBlank { null }
                 )
+
+                val finalizationResult = documentRepository.finalizeDocument(input)
 
                 when (finalizationResult) {
                     is DocumentFinalizationResult.Success -> {
                         _uiState.update { it.copy(isFinalizing = false, isDirty = false) }
-                        _uiEffect.emit(InvoiceUiEffect.NavigateSuccess(docIdToFinalize))
+                        _uiEffect.emit(InvoiceUiEffect.NavigateSuccess(finalizationResult.document.id))
                     }
                     is DocumentFinalizationResult.Invalid -> {
                         val isDuplicate = finalizationResult.errors.contains(DocumentValidationError.DuplicateDocumentNumber)

@@ -44,15 +44,16 @@ interface DocumentRepository {
     ): Result<BusinessDocument>
 
     /**
-     * Finalizes a DRAFT document.
-     *
-     * The repository internally invokes [DocumentCalculator] to compute authoritative financial
-     * totals from the document's persisted line items, seller GSTIN state code, and
-     * place-of-supply state code. The UI must NOT supply pre-computed totals.
-     *
-     * @param documentId ID of the draft to finalize.
-     * @param overrideDocumentNumber Optional manual document number override. When null the
-     *   auto-suggested number already stored on the draft is used.
+     * Finalizes a document directly from current editor values in one atomic operation.
+     * If documentId is null (NEW document), creates directly as FINALIZED without an intermediate draft.
+     * If documentId is non-null (existing DRAFT), updates the existing draft and finalizes atomically.
+     */
+    suspend fun finalizeDocument(
+        input: com.vivaanenterprise.app.domain.model.DocumentFinalizationInput
+    ): DocumentFinalizationResult
+
+    /**
+     * Finalizes a DRAFT document by ID.
      */
     suspend fun finalizeDocument(
         documentId: String,
