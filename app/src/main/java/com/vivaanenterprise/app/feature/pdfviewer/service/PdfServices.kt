@@ -23,23 +23,53 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 
 @Singleton
 class PdfFilenameSanitizer @Inject constructor() {
+
     fun formatUserFacingFilename(document: BusinessDocument): String {
-        val prefix = if (document.documentType == DocumentType.TAX_INVOICE) "Tax-Invoice" else "Purchase-Order"
+        val prefix = if (document.documentType == DocumentType.TAX_INVOICE) "Tax_Invoice" else "Purchase_Order"
+
         val rawNum = document.documentNumber.trim()
-        val safeNum = sanitizeFilename(rawNum).ifBlank { document.id.take(8) }
-        return "${prefix}_${safeNum}.pdf"
+        val safeNum = sanitizePart(rawNum).ifBlank {
+            sanitizePart(document.id.take(8)).ifBlank { "DOC" }
+        }
+
+        val rawClient = document.clientSnapshot?.companyName?.trim() ?: ""
+        val safeClient = sanitizePart(rawClient)
+
+        val nameWithoutExt = if (safeClient.isNotBlank()) {
+            "${prefix}_${safeNum}_${safeClient}"
+        } else {
+            "${prefix}_${safeNum}"
+        }
+
+        // Bound total base name length to 120 chars max while protecting type & doc number
+        val safeBase = if (nameWithoutExt.length > 120) {
+            val prefixAndNum = "${prefix}_${safeNum}_"
+            if (prefixAndNum.length < 115) {
+                val availableForClient = 120 - prefixAndNum.length
+                prefixAndNum + safeClient.take(availableForClient).trimEnd('_')
+            } else {
+                nameWithoutExt.take(120).trimEnd('_')
+            }
+        } else {
+            nameWithoutExt
+        }
+
+        return "${safeBase}.pdf"
     }
 
     fun sanitizeFilename(input: String): String {
+        return sanitizePart(input)
+    }
+
+    private fun sanitizePart(input: String): String {
         if (input.isBlank()) return ""
-        // Replace slashes, backslashes, colons, spaces, dots, and OS reserved characters with hyphen
-        var clean = input.replace(Regex("[\\\\/:*?\"<>|\\s.]"), "-")
-        // Collapse multiple consecutive hyphens
-        clean = clean.replace(Regex("-+"), "-").trim('-')
         // Prevent path traversal
-        clean = clean.replace("..", "")
-        // Cap maximum length
-        return clean.take(64)
+        var clean = input.replace("..", "")
+        // Replace slashes, backslashes, colons, quotes, spaces, dots, and OS reserved characters with underscore
+        clean = clean.replace(Regex("[\\\\/:*?\"<>|\\s.\\-+=,;!@#$%^&()~\\[\\]{}'`]+"), "_")
+        // Collapse multiple consecutive underscores
+        clean = clean.replace(Regex("_+"), "_").trim('_')
+        return clean
     }
 }
 
@@ -127,10 +157,22 @@ open class PdfShareManager @Inject constructor(
     private val sanitizer: PdfFilenameSanitizer
 ) {
     open fun createShareIntent(cachedFile: File, document: BusinessDocument): Intent {
+        val userFacingName = sanitizer.formatUserFacingFilename(document)
+        val shareFile = File(cachedFile.parentFile, userFacingName)
+
+        // Copy content from cached internal file to a user-facing named file in the cache directory
+        try {
+            cachedFile.copyTo(shareFile, overwrite = true)
+        } catch (_: Exception) {
+            // Fallback to cached file if copy fails for any reason
+        }
+
+        val targetFile = if (shareFile.exists() && shareFile.length() > 0) shareFile else cachedFile
+
         val uri = FileProvider.getUriForFile(
             context,
             "${context.packageName}.fileprovider",
-            cachedFile
+            targetFile
         )
 
         val intent = Intent(Intent.ACTION_SEND).apply {
