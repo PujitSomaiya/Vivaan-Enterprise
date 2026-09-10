@@ -39,6 +39,7 @@ import com.vivaanenterprise.app.core.designsystem.component.AppPrimaryButton
 import com.vivaanenterprise.app.core.designsystem.component.AppScaffold
 import com.vivaanenterprise.app.core.designsystem.component.AppTextField
 import com.vivaanenterprise.app.core.designsystem.component.VeLogo
+import com.vivaanenterprise.app.core.designsystem.component.VivaanBrandLogo
 import com.vivaanenterprise.app.core.designsystem.theme.AppTheme
 import com.vivaanenterprise.app.core.designsystem.theme.VivaanEnterpriseTheme
 
@@ -116,15 +117,7 @@ fun LoginScreen(
                         .padding(AppTheme.spacing.lg),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    VeLogo(size = AppTheme.sizing.logoMedium)
-
-                    Spacer(modifier = Modifier.height(AppTheme.spacing.md))
-
-                    Text(
-                        text = stringResource(R.string.app_name),
-                        style = AppTheme.typography.headlineMedium,
-                        color = AppTheme.colorScheme.primary
-                    )
+                    VivaanBrandLogo(logoSize = AppTheme.sizing.logoMedium)
 
                     Spacer(modifier = Modifier.height(AppTheme.spacing.xs))
 

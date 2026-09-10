@@ -4,29 +4,57 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Background grid/canvas fill -->
+    
+    <!-- Safe Area Badge Frame -->
     <path
-        android:fillColor="#334E68"
-        android:pathData="M0,0h108v108h-108z"/>
-    <!-- Outer Document Frame -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="4"
-        android:pathData="M34,26h40a6,6 0,0 1,6 6v44a6,6 0,0 1,-6 6h-40a6,6 0,0 1,-6 -6v-44a6,6 0,0 1,6 -6z"/>
-    <!-- "V" Monogram -->
+        android:fillColor="#1F334E68"
+        android:pathData="M34,26h40a12,12 0,0 1,12 12v32a12,12 0,0 1,-12 12h-40a12,12 0,0 1,-12 -12v-32a12,12 0,0 1,12 -12z"/>
+    
     <path
         android:fillColor="#00000000"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="5"
+        android:strokeWidth="3.5"
+        android:pathData="M34,26h40a12,12 0,0 1,12 12v32a12,12 0,0 1,-12 12h-40a12,12 0,0 1,-12 -12v-32a12,12 0,0 1,12 -12z"/>
+
+    <!-- 'V' Monogram -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:pathData="M41,38 L54,62 L67,38"/>
-    <!-- Accent Line ("E" Bar) -->
+        android:pathData="M31,44 L44,68 L57,44"/>
+
+    <!-- 'E' Monogram -->
+    <!-- E Spine -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:pathData="M62,44 L62,68"/>
+
+    <!-- E Top Bar -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:pathData="M62,44 L77,44"/>
+
+    <!-- E Middle Bar (Accent Color) -->
     <path
         android:fillColor="#00000000"
         android:strokeColor="#9FB3C8"
-        android:strokeWidth="4"
+        android:strokeWidth="5"
         android:strokeLineCap="round"
-        android:pathData="M43,68 L65,68"/>
+        android:pathData="M62,56 L75,56"/>
+
+    <!-- E Bottom Bar -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:pathData="M62,68 L77,68"/>
 </vector>
