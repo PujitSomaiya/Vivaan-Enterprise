@@ -52,9 +52,6 @@ object SyncMergePolicy {
 
     // Merge decision for Line Item
     fun evaluateLineItemMerge(parentDocument: BusinessDocumentEntity?): MergeResult {
-        if (parentDocument?.status == DocumentStatus.FINALIZED) {
-            return MergeResult.REJECT_FINALIZED_SNAPSHOT_MUTATION
-        }
         return MergeResult.ACCEPT_REMOTE
     }
 
