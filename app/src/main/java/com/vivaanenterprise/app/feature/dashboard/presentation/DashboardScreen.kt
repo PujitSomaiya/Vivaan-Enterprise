@@ -25,6 +25,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Row
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vivaanenterprise.app.R
 import com.vivaanenterprise.app.core.designsystem.component.AppCard
 import com.vivaanenterprise.app.core.designsystem.component.AppScaffold
@@ -40,9 +43,13 @@ fun DashboardRoute(
     onNavigateToNewInvoice: () -> Unit,
     onNavigateToNewPurchaseOrder: () -> Unit,
     onNavigateToDocuments: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: DashboardViewModel = hiltViewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     DashboardScreen(
+        uiState = uiState,
         onSignOutClick = onSignOutClick,
         onNavigateToClients = onNavigateToClients,
         onNavigateToProducts = onNavigateToProducts,
@@ -56,6 +63,7 @@ fun DashboardRoute(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
+    uiState: DashboardUiState = DashboardUiState(),
     onSignOutClick: () -> Unit,
     onNavigateToClients: () -> Unit,
     onNavigateToProducts: () -> Unit,
@@ -140,6 +148,14 @@ fun DashboardScreen(
                         color = AppTheme.colorScheme.onSurfaceVariant
                     )
 
+                    Spacer(modifier = Modifier.height(AppTheme.spacing.md))
+
+                    // Restrained V1 Dashboard Summaries Card
+                    DashboardSummarySection(
+                        finalizedInvoiceCount = uiState.summary.finalizedInvoiceCount,
+                        totalBilledPaise = uiState.summary.totalBilledPaise
+                    )
+
                     Spacer(modifier = Modifier.height(AppTheme.spacing.lg))
 
                     com.vivaanenterprise.app.core.designsystem.component.AppPrimaryButton(
@@ -180,6 +196,61 @@ fun DashboardScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DashboardSummarySection(
+    finalizedInvoiceCount: Int,
+    totalBilledPaise: Long
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.md)
+    ) {
+        AppCard(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(AppTheme.spacing.md),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = stringResource(R.string.dashboard_finalized_invoices_label),
+                    style = AppTheme.typography.labelMedium,
+                    color = AppTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(AppTheme.spacing.xs))
+                Text(
+                    text = finalizedInvoiceCount.toString(),
+                    style = AppTheme.typography.titleLarge,
+                    color = AppTheme.colorScheme.onSurface,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                )
+            }
+        }
+
+        AppCard(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(AppTheme.spacing.md),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = stringResource(R.string.dashboard_total_billed_label),
+                    style = AppTheme.typography.labelMedium,
+                    color = AppTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(AppTheme.spacing.xs))
+                Text(
+                    text = "₹ ${com.vivaanenterprise.app.core.pdf.PdfFormattingUtils.formatPaiseToCurrency(totalBilledPaise)}",
+                    style = AppTheme.typography.titleLarge,
+                    color = AppTheme.colorScheme.primary,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                )
             }
         }
     }

@@ -52,6 +52,15 @@ sealed class Screen(val route: String) {
             const val ROUTE_PATTERN = "pdf_viewer/{documentId}"
         }
     }
+    data class ClientAccount(val clientId: String) : Screen("client_account/$clientId") {
+        companion object {
+            const val ROUTE_PATTERN = "client_account/{clientId}"
+        }
+    }
+}
+
+fun NavController.navigateToClientAccount(clientId: String) {
+    navigate(Screen.ClientAccount(clientId).route)
 }
 
 fun NavController.navigateToAddPurchaseOrder() {

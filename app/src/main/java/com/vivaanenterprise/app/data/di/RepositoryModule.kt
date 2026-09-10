@@ -39,4 +39,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindBusinessProfileRepository(impl: com.vivaanenterprise.app.data.repository.BusinessProfileRepositoryImpl): com.vivaanenterprise.app.domain.repository.BusinessProfileRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindClientAccountRepository(impl: com.vivaanenterprise.app.data.repository.ClientAccountRepositoryImpl): com.vivaanenterprise.app.domain.repository.ClientAccountRepository
 }

@@ -509,6 +509,13 @@ private class FakeBusinessDocumentDao : BusinessDocumentDao {
         return flowOf(documents.values.filter { it.clientId == clientId && !it.isDeleted })
     }
 
+    override fun observeDashboardSummary(): Flow<com.vivaanenterprise.app.core.database.dao.DashboardSummaryProjection> {
+        val finalizedInvoices = documents.values.filter { it.documentType == DocumentType.TAX_INVOICE && it.status == com.vivaanenterprise.app.core.common.DocumentStatus.FINALIZED && !it.isDeleted }
+        val count = finalizedInvoices.size
+        val total = finalizedInvoices.fold(0L) { acc, d -> acc + d.grandTotalPaise }
+        return flowOf(com.vivaanenterprise.app.core.database.dao.DashboardSummaryProjection(count, total))
+    }
+
     override suspend fun getBySyncStatus(status: SyncStatus): List<BusinessDocumentEntity> {
         return documents.values.filter { it.syncStatus == status }
     }

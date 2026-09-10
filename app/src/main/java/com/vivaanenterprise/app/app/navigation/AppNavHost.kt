@@ -206,6 +206,21 @@ fun AppNavHost(
                         onNavigateBack = { navController.popBackStack() },
                         onNavigateToEdit = { clientId ->
                             navController.navigateToEditClient(clientId)
+                        },
+                        onNavigateToAccount = { clientId ->
+                            navController.navigateToClientAccount(clientId)
+                        }
+                    )
+                }
+
+                composable(
+                    route = Screen.ClientAccount.ROUTE_PATTERN,
+                    arguments = listOf(navArgument("clientId") { type = NavType.StringType })
+                ) {
+                    com.vivaanenterprise.app.feature.account.presentation.ClientAccountRoute(
+                        onNavigateBack = { navController.popBackStack() },
+                        onOpenDocumentDetail = { docId ->
+                            navController.navigateToDocumentDetail(docId)
                         }
                     )
                 }

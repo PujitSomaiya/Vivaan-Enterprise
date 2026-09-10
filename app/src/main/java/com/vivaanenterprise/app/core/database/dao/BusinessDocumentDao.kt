@@ -36,4 +36,11 @@ interface BusinessDocumentDao {
 
     @Query("UPDATE business_documents SET isDeleted = 1, deletedAt = :deletedAt, updatedAt = :updatedAt, syncStatus = :syncStatus WHERE id = :id")
     suspend fun softDelete(id: String, deletedAt: Long, updatedAt: Long, syncStatus: SyncStatus = SyncStatus.PENDING)
+    @Query("SELECT COUNT(*) AS count, COALESCE(SUM(grandTotalPaise), 0) AS totalBilledPaise FROM business_documents WHERE documentType = 'TAX_INVOICE' AND status = 'FINALIZED' AND isDeleted = 0")
+    fun observeDashboardSummary(): Flow<DashboardSummaryProjection>
 }
+
+data class DashboardSummaryProjection(
+    val count: Int,
+    val totalBilledPaise: Long
+)

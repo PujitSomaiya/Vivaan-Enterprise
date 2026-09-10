@@ -129,5 +129,17 @@
     <string name="action_edit_draft">Edit Draft</string>
     <string name="action_view_pdf">View PDF</string>
     <string name="error_document_not_found">Document not found or has been deleted</string>
+
+    <!-- Client Account & Dashboard Summaries String Resources -->
+    <string name="client_account_title">Billing Account</string>
+    <string name="client_account_action">View Billing Account</string>
+    <string name="invoice_history_title">Billing &amp; Invoice History</string>
+    <string name="invoice_count_label">Invoices Count</string>
+    <string name="total_billed_label">Total Billed</string>
+    <string name="empty_account_invoices_title">No invoices for this client yet</string>
+    <string name="empty_account_invoices_description">Finalized tax invoices generated for this client will appear in billing history.</string>
+    <string name="view_document_action">View Document</string>
+    <string name="dashboard_finalized_invoices_label">Finalized Invoices</string>
+    <string name="dashboard_total_billed_label">Total Billed</string>
 </resources>
 
