@@ -268,6 +268,7 @@ class PdfViewerViewModelTest {
             override suspend fun updateDraft(document: BusinessDocument, lineItems: List<DocumentLineItem>) = TODO()
             override suspend fun finalizeDocument(documentId: String, overrideDocumentNumber: String?) = TODO()
             override suspend fun cancelDocument(documentId: String) = TODO()
+            override suspend fun deleteDocument(documentId: String) = TODO()
         },
         pdfGenerator = object : com.vivaanenterprise.app.domain.pdf.BusinessDocumentPdfGenerator {
             override suspend fun generatePdf(document: BusinessDocument) = PdfGenerationResult.Failure.NoLineItems

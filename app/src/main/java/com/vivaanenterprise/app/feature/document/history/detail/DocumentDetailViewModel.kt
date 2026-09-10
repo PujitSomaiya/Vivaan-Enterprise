@@ -91,4 +91,36 @@ class DocumentDetailViewModel @Inject constructor(
                 }
         }
     }
+
+    fun onDeleteClicked() {
+        _uiState.update { it.copy(showDeleteConfirmationDialog = true) }
+    }
+
+    fun onDeleteDismissed() {
+        _uiState.update { it.copy(showDeleteConfirmationDialog = false) }
+    }
+
+    fun onDeleteConfirmed() {
+        val currentDoc = _uiState.value.document ?: return
+        if (_uiState.value.isDeleting) return
+
+        _uiState.update { it.copy(isDeleting = true, showDeleteConfirmationDialog = false) }
+
+        viewModelScope.launch {
+            val result = documentRepository.deleteDocument(currentDoc.id)
+            result.fold(
+                onSuccess = {
+                    _uiState.update { it.copy(isDeleting = false, isDeletedSuccessfully = true) }
+                },
+                onFailure = { throwable ->
+                    _uiState.update {
+                        it.copy(
+                            isDeleting = false,
+                            errorMessage = throwable.message ?: "Failed to delete document"
+                        )
+                    }
+                }
+            )
+        }
+    }
 }

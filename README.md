@@ -34,6 +34,7 @@ It is designed for rapid, reliable local operation with background remote synchr
   - Multi-line item entries
   - Dynamic GST calculations (IGST or CGST + SGST)
   - Frozen historical document snapshots upon finalization
+  - Synchronized soft deletion (tombstoning) of Draft and Finalized documents (excluding accounting cancellation/reversal)
 - **In-App PDF Viewer**: On-demand native rendering of finalized documents into A4 PDF pages with zoom, scroll, export to device storage, and system share capabilities.
 - **Client Billing History**: Automatic recording of finalized invoices into client account ledgers.
 - **Offline Sync**: Local-first Room database operation with background WorkManager synchronization to Cloud Firestore.

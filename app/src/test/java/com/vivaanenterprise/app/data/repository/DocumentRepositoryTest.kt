@@ -493,6 +493,10 @@ private class FakeBusinessDocumentDao : BusinessDocumentDao {
         return documents[id]?.takeIf { !it.isDeleted }
     }
 
+    override suspend fun getByIdIncludingDeleted(id: String): BusinessDocumentEntity? {
+        return documents[id]
+    }
+
     override fun observeById(id: String): Flow<BusinessDocumentEntity?> {
         return flowOf(runBlocking { getById(id) })
     }

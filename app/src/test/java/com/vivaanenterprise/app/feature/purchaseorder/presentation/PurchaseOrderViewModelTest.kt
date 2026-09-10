@@ -448,4 +448,5 @@ private class FakeDocumentRepository : DocumentRepository {
     }
 
     override suspend fun cancelDocument(documentId: String): Result<Unit> = Result.success(Unit)
+    override suspend fun deleteDocument(documentId: String): Result<Unit> = Result.success(Unit)
 }

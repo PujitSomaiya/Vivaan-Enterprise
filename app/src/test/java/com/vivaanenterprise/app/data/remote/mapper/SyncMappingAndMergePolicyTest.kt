@@ -243,7 +243,7 @@ class SyncMappingAndMergePolicyTest {
 
     @Test
     fun testNewRemoteFinalizedDocumentCanBeInserted() {
-        val result = SyncMergePolicy.evaluateDocumentMerge(local = null, remoteUpdatedAt = 2000L)
+        val result = SyncMergePolicy.evaluateDocumentMerge(local = null, remoteIsDeleted = false, remoteUpdatedAt = 2000L)
         assertEquals(SyncMergePolicy.MergeResult.ACCEPT_REMOTE, result)
     }
 
@@ -261,8 +261,26 @@ class SyncMappingAndMergePolicyTest {
             syncStatus = SyncStatus.SYNCED
         )
 
-        val result = SyncMergePolicy.evaluateDocumentMerge(localFinalizedDoc, remoteUpdatedAt = 3000L)
+        val result = SyncMergePolicy.evaluateDocumentMerge(localFinalizedDoc, remoteIsDeleted = false, remoteUpdatedAt = 3000L)
         assertEquals(SyncMergePolicy.MergeResult.REJECT_FINALIZED_SNAPSHOT_MUTATION, result)
+    }
+
+    @Test
+    fun testRemoteDocumentTombstoneAcceptedForSyncedFinalizedRecord() {
+        val localFinalizedDoc = BusinessDocumentEntity(
+            id = "doc-final-1",
+            documentType = DocumentType.TAX_INVOICE,
+            documentNumber = "VE/01/2026-27",
+            documentDate = 1000L,
+            status = DocumentStatus.FINALIZED,
+            clientId = "client-1",
+            createdAt = 1000L,
+            updatedAt = 1000L,
+            syncStatus = SyncStatus.SYNCED
+        )
+
+        val result = SyncMergePolicy.evaluateDocumentMerge(localFinalizedDoc, remoteIsDeleted = true, remoteUpdatedAt = 3000L)
+        assertEquals(SyncMergePolicy.MergeResult.ACCEPT_REMOTE, result)
     }
 
     @Test

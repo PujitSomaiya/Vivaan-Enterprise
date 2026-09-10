@@ -38,12 +38,15 @@ object SyncMergePolicy {
     }
 
     // Merge decision for BusinessDocument
-    fun evaluateDocumentMerge(local: BusinessDocumentEntity?, remoteUpdatedAt: Long): MergeResult {
+    fun evaluateDocumentMerge(local: BusinessDocumentEntity?, remoteIsDeleted: Boolean, remoteUpdatedAt: Long): MergeResult {
         if (local == null) return MergeResult.ACCEPT_REMOTE
         if (local.syncStatus == SyncStatus.PENDING || local.syncStatus == SyncStatus.FAILED) {
             return MergeResult.REJECT_REMOTE_PROTECT_LOCAL
         }
-        if (local.status == DocumentStatus.FINALIZED) {
+        if (remoteIsDeleted) {
+            return MergeResult.ACCEPT_REMOTE
+        }
+        if (local.status == DocumentStatus.FINALIZED && !local.isDeleted) {
             return MergeResult.REJECT_FINALIZED_SNAPSHOT_MUTATION
         }
         if (remoteUpdatedAt >= local.updatedAt) return MergeResult.ACCEPT_REMOTE

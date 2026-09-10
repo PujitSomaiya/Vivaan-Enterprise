@@ -60,5 +60,7 @@ interface DocumentRepository {
     ): DocumentFinalizationResult
 
     suspend fun cancelDocument(documentId: String): Result<Unit>
+
+    suspend fun deleteDocument(documentId: String): Result<Unit>
 }
 

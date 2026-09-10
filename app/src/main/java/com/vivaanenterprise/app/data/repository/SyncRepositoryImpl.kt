@@ -134,8 +134,8 @@ class SyncRepositoryImpl @Inject constructor(
             // Order 4: Business Documents
             val remoteDocuments = firestoreSyncDataSource.pullBusinessDocumentsSince(lastSyncTime)
             for (remoteDto in remoteDocuments) {
-                val localDoc = db.businessDocumentDao().getById(remoteDto.id)
-                when (SyncMergePolicy.evaluateDocumentMerge(localDoc, remoteDto.updatedAt)) {
+                val localDoc = db.businessDocumentDao().getByIdIncludingDeleted(remoteDto.id)
+                when (SyncMergePolicy.evaluateDocumentMerge(localDoc, remoteDto.isDeleted, remoteDto.updatedAt)) {
                     SyncMergePolicy.MergeResult.ACCEPT_REMOTE -> {
                         db.businessDocumentDao().upsert(remoteDto.toEntity(syncedAt = syncStartTime))
                     }

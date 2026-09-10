@@ -472,4 +472,36 @@ class DocumentRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    override suspend fun deleteDocument(documentId: String): Result<Unit> {
+        return try {
+            val existing = documentDao.getById(documentId)
+                ?: return Result.failure(IllegalArgumentException("Document not found"))
+
+            if (existing.isDeleted) {
+                return Result.success(Unit)
+            }
+
+            val now = timeProvider.currentTimeMillis()
+
+            runTransaction {
+                // 1. Soft-delete BusinessDocument
+                documentDao.softDelete(id = documentId, deletedAt = now, updatedAt = now, syncStatus = SyncStatus.PENDING)
+
+                // 2. Soft-delete linked ClientAccountEntry if one exists (for TAX_INVOICE)
+                val accountEntry = accountEntryDao.findByDocumentId(documentId)
+                if (accountEntry != null) {
+                    accountEntryDao.softDelete(id = accountEntry.id, deletedAt = now, updatedAt = now, syncStatus = SyncStatus.PENDING)
+                }
+            }
+
+            try { syncScheduler.enqueueSync() } catch (e: Exception) { /* ignore */ }
+
+            Result.success(Unit)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

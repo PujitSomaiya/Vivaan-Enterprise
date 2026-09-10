@@ -712,6 +712,7 @@ class InvoiceViewModelTest {
         }
 
         override suspend fun cancelDocument(documentId: String): Result<Unit> = Result.success(Unit)
+        override suspend fun deleteDocument(documentId: String): Result<Unit> = Result.success(Unit)
     }
 
     private class FakeBusinessProfileRepository(private val profile: BusinessProfile) : BusinessProfileRepository {

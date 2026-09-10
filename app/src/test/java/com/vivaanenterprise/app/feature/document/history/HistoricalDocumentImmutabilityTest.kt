@@ -107,6 +107,7 @@ class HistoricalDocumentImmutabilityTest {
         override suspend fun updateDraft(document: BusinessDocument, lineItems: List<DocumentLineItem>): Result<BusinessDocument> = TODO()
         override suspend fun finalizeDocument(documentId: String, overrideDocumentNumber: String?): DocumentFinalizationResult = TODO()
         override suspend fun cancelDocument(documentId: String): Result<Unit> = TODO()
+        override suspend fun deleteDocument(documentId: String): Result<Unit> = Result.success(Unit)
     }
 
     private class FakeClientRepo(initialClients: List<Client>) : ClientRepository {
