@@ -257,6 +257,7 @@ class PdfViewerViewModelTest {
 
     private class FakeGenerateBusinessDocumentPdfUseCase : GenerateBusinessDocumentPdfUseCase(
         documentRepository = object : com.vivaanenterprise.app.domain.repository.DocumentRepository {
+            override fun observeAllDocuments() = TODO()
             override fun observeDocumentById(id: String) = TODO()
             override fun observeDocumentsByType(type: DocumentType) = TODO()
             override fun observeDocumentsByClient(clientId: String) = TODO()

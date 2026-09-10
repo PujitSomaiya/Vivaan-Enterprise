@@ -7,6 +7,7 @@ import com.vivaanenterprise.app.domain.model.DocumentLineItem
 import kotlinx.coroutines.flow.Flow
 
 interface DocumentRepository {
+    fun observeAllDocuments(): Flow<List<BusinessDocument>>
     fun observeDocumentById(id: String): Flow<BusinessDocument?>
     fun observeDocumentsByType(type: DocumentType): Flow<List<BusinessDocument>>
     fun observeDocumentsByClient(clientId: String): Flow<List<BusinessDocument>>

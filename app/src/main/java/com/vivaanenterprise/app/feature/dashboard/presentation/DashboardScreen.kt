@@ -39,6 +39,7 @@ fun DashboardRoute(
     onNavigateToProducts: () -> Unit,
     onNavigateToNewInvoice: () -> Unit,
     onNavigateToNewPurchaseOrder: () -> Unit,
+    onNavigateToDocuments: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     DashboardScreen(
@@ -47,6 +48,7 @@ fun DashboardRoute(
         onNavigateToProducts = onNavigateToProducts,
         onNavigateToNewInvoice = onNavigateToNewInvoice,
         onNavigateToNewPurchaseOrder = onNavigateToNewPurchaseOrder,
+        onNavigateToDocuments = onNavigateToDocuments,
         modifier = modifier
     )
 }
@@ -59,6 +61,7 @@ fun DashboardScreen(
     onNavigateToProducts: () -> Unit,
     onNavigateToNewInvoice: () -> Unit = {},
     onNavigateToNewPurchaseOrder: () -> Unit = {},
+    onNavigateToDocuments: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showSignOutDialog by remember { mutableStateOf(false) }
@@ -150,6 +153,14 @@ fun DashboardScreen(
                     com.vivaanenterprise.app.core.designsystem.component.AppPrimaryButton(
                         text = "New Purchase Order",
                         onClick = onNavigateToNewPurchaseOrder,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(AppTheme.spacing.md))
+
+                    com.vivaanenterprise.app.core.designsystem.component.AppPrimaryButton(
+                        text = stringResource(R.string.documents_title),
+                        onClick = onNavigateToDocuments,
                         modifier = Modifier.fillMaxWidth()
                     )
 

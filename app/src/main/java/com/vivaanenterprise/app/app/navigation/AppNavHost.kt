@@ -102,6 +102,37 @@ fun AppNavHost(
                         },
                         onNavigateToNewPurchaseOrder = {
                             navController.navigateToAddPurchaseOrder()
+                        },
+                        onNavigateToDocuments = {
+                            navController.navigateToDocuments()
+                        }
+                    )
+                }
+
+                composable(Screen.Documents.route) {
+                    com.vivaanenterprise.app.feature.document.history.list.DocumentsRoute(
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToDetail = { docId -> navController.navigateToDocumentDetail(docId) },
+                        onNavigateToNewInvoice = { navController.navigateToAddInvoice() },
+                        onNavigateToNewPurchaseOrder = { navController.navigateToAddPurchaseOrder() }
+                    )
+                }
+
+                composable(
+                    route = Screen.DocumentDetail.ROUTE_PATTERN,
+                    arguments = listOf(navArgument("documentId") { type = NavType.StringType })
+                ) {
+                    com.vivaanenterprise.app.feature.document.history.detail.DocumentDetailRoute(
+                        onNavigateBack = { navController.popBackStack() },
+                        onEditDraft = { docType, docId ->
+                            if (docType == com.vivaanenterprise.app.core.common.DocumentType.TAX_INVOICE) {
+                                navController.navigateToEditInvoice(docId)
+                            } else {
+                                navController.navigateToEditPurchaseOrder(docId)
+                            }
+                        },
+                        onViewPdf = { docId ->
+                            navController.navigateToPdfViewerFromHistory(docId)
                         }
                     )
                 }

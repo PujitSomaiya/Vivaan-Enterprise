@@ -19,9 +19,9 @@ It is designed for rapid, reliable local operation with background remote synchr
 ---
 
 ## Project Status
-> **Current Phase**: Native PDF Viewer, Sharing & Export Engine Implemented (Step 14)
+> **Current Phase**: Documents / History Implemented (Step 15)
 > 
-> The application features complete Client Master, Product Master, Document Domain foundation, Tax Calculation Engine, Tax Invoice & Purchase Order Creation UI, Native A4 PDF Generation Engine, Native PDF Viewer, PDF share via Android FileProvider, and PDF save/export to Downloads via MediaStore/SAF.
+> The application features complete Client Master, Product Master, Document Domain foundation, Tax Calculation Engine, Tax Invoice & Purchase Order Creation UI, Native A4 PDF Generation Engine, Native PDF Viewer, PDF share/export, and Document History (Draft/Finalized document browsing, search, type & status filters, detailed view, draft editing, and PDF viewing from history).
 
 ---
 

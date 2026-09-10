@@ -497,6 +497,10 @@ private class FakeBusinessDocumentDao : BusinessDocumentDao {
         return flowOf(runBlocking { getById(id) })
     }
 
+    override fun observeAllDocuments(): Flow<List<BusinessDocumentEntity>> {
+        return flowOf(documents.values.filter { !it.isDeleted })
+    }
+
     override fun observeDocumentsByType(type: DocumentType): Flow<List<BusinessDocumentEntity>> {
         return flowOf(documents.values.filter { it.documentType == type && !it.isDeleted })
     }

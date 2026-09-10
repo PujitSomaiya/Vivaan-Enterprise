@@ -41,6 +41,12 @@ sealed class Screen(val route: String) {
             const val ROUTE_PATTERN = "po_edit/{documentId}"
         }
     }
+    data object Documents : Screen("documents")
+    data class DocumentDetail(val documentId: String) : Screen("document_detail/$documentId") {
+        companion object {
+            const val ROUTE_PATTERN = "document_detail/{documentId}"
+        }
+    }
     data class PdfViewer(val documentId: String) : Screen("pdf_viewer/$documentId") {
         companion object {
             const val ROUTE_PATTERN = "pdf_viewer/{documentId}"
@@ -108,6 +114,18 @@ fun NavController.navigateToProductDetail(productId: String) {
 
 fun NavController.navigateToEditProduct(productId: String) {
     navigate(Screen.EditProduct(productId).route)
+}
+
+fun NavController.navigateToDocuments() {
+    navigate(Screen.Documents.route)
+}
+
+fun NavController.navigateToDocumentDetail(documentId: String) {
+    navigate(Screen.DocumentDetail(documentId).route)
+}
+
+fun NavController.navigateToPdfViewerFromHistory(documentId: String) {
+    navigate(Screen.PdfViewer(documentId).route)
 }
 
 fun NavController.navigateToPdfViewer(documentId: String) {

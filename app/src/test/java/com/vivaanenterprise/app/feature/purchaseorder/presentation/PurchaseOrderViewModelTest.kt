@@ -378,6 +378,7 @@ private class FakeDocumentRepository : DocumentRepository {
     var lastCreatedDraftType: DocumentType? = null
     val documents = mutableMapOf<String, BusinessDocument>()
 
+    override fun observeAllDocuments(): Flow<List<BusinessDocument>> = MutableStateFlow(documents.values.toList())
     override fun observeDocumentById(id: String): Flow<BusinessDocument?> = MutableStateFlow(documents[id])
     override fun observeDocumentsByType(type: DocumentType): Flow<List<BusinessDocument>> = MutableStateFlow(documents.values.filter { it.documentType == type })
     override fun observeDocumentsByClient(clientId: String): Flow<List<BusinessDocument>> = MutableStateFlow(documents.values.filter { it.clientId == clientId })
