@@ -1,50 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
+    android:width="288dp"
+    android:height="288dp"
+    android:viewportWidth="288"
+    android:viewportHeight="288">
 
+    <!-- Safe-padded central VE Monogram for Android 12+ Splash (windowSplashScreenAnimatedIcon) -->
     <!-- 'V' Monogram -->
     <path
         android:fillColor="#00000000"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="7"
+        android:strokeWidth="11"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:pathData="M27,39 L43,69 L59,39"/>
+        android:pathData="M98,114 L126,174 L154,114"/>
 
     <!-- 'E' Monogram -->
     <!-- E Spine -->
     <path
         android:fillColor="#00000000"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="7"
+        android:strokeWidth="11"
         android:strokeLineCap="round"
-        android:pathData="M65,39 L65,69"/>
+        android:pathData="M164,114 L164,174"/>
 
     <!-- E Top Bar -->
     <path
         android:fillColor="#00000000"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="7"
+        android:strokeWidth="11"
         android:strokeLineCap="round"
-        android:pathData="M65,39 L81,39"/>
+        android:pathData="M164,114 L192,114"/>
 
     <!-- E Middle Bar (Accent Color) -->
     <path
         android:fillColor="#00000000"
         android:strokeColor="#9FB3C8"
-        android:strokeWidth="6"
+        android:strokeWidth="10"
         android:strokeLineCap="round"
-        android:pathData="M65,54 L78,54"/>
+        android:pathData="M164,144 L187,144"/>
 
     <!-- E Bottom Bar -->
     <path
         android:fillColor="#00000000"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="7"
+        android:strokeWidth="11"
         android:strokeLineCap="round"
-        android:pathData="M65,69 L81,69"/>
+        android:pathData="M164,174 L192,174"/>
 </vector>
-

@@ -130,6 +130,9 @@ When Step 3 implements the design system, it will build the following atomic Com
 
 ## 8. Brand & Logo Direction
 - **Brand Name**: Vivaan Enterprise
-- **Concept**: Minimalist geometric "VE" monogram integrated with a stylized document/tax invoice motif.
-- **Palette**: Navy Blue (`#334E68`) and Steel Gray (`#486581`) on clean white background.
-- **Guidelines**: No gradients, no cartoon graphics, no 3D reflections. Must remain legible at 48x48dp launcher icon sizes.
+- **Concept**: Minimalist geometric "VE" monogram.
+- **Palette**: Navy Blue (`#334E68`) primary, Steel Blue (`#9FB3C8`) secondary accent on crisp white background.
+- **Launcher Icon**: Clean VE monogram centered within the adaptive-icon safe zone (27dp–81dp within 108dp viewport). No inner card/badge frame to prevent double-masking by OS masks. Includes monochrome themed icon support.
+- **Splash Screen**: Safe-padded `ic_splash_logo` centered within 288dp viewport on Navy Blue (`#334E68`) background.
+- **Guidelines**: No gradients, no cartoon graphics, no 3D reflections. Must remain clean and legible across circle, squircle, and rounded-square launcher masks.
+
