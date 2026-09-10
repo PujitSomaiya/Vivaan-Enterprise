@@ -56,6 +56,14 @@ class DocumentRepositoryImpl @Inject constructor(
     private val sequenceDao   = database.documentSequenceDao()
     private val accountEntryDao = database.clientAccountEntryDao()
 
+    override fun observeAllDocuments(): Flow<List<BusinessDocument>> {
+        return documentDao.observeAllDocuments().map { list ->
+            list.map { entity ->
+                entity.toDomain(emptyList())
+            }
+        }
+    }
+
     override fun observeDocumentById(id: String): Flow<BusinessDocument?> {
         return documentDao.observeById(id).map { entity ->
             if (entity == null) return@map null

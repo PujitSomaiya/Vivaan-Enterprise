@@ -111,5 +111,35 @@
     <string name="error_product_not_found">Product not found</string>
     <string name="error_saving_product">Unable to save product. Please try again.</string>
     <string name="error_deleting_product">Unable to delete product. Please try again.</string>
+    <!-- Documents History String Resources -->
+    <string name="documents_title">Documents</string>
+    <string name="document_detail_title">Document Details</string>
+    <string name="search_documents_placeholder">Search by document # or client name…</string>
+    <string name="empty_documents_title">No documents yet</string>
+    <string name="empty_documents_description">Create your first Tax Invoice or Purchase Order to see history here.</string>
+    <string name="empty_documents_search_title">No matching documents</string>
+    <string name="empty_documents_search_description">No document matches your search and filter criteria.</string>
+    <string name="filter_type_all">All Types</string>
+    <string name="filter_type_tax_invoice">Tax Invoice</string>
+    <string name="filter_type_purchase_order">Purchase Order</string>
+    <string name="filter_status_all">All Statuses</string>
+    <string name="filter_status_draft">Draft</string>
+    <string name="filter_status_finalized">Finalized</string>
+    <string name="filter_status_cancelled">Cancelled</string>
+    <string name="action_edit_draft">Edit Draft</string>
+    <string name="action_view_pdf">View PDF</string>
+    <string name="error_document_not_found">Document not found or has been deleted</string>
+
+    <!-- Client Account & Dashboard Summaries String Resources -->
+    <string name="client_account_title">Billing Account</string>
+    <string name="client_account_action">View Billing Account</string>
+    <string name="invoice_history_title">Billing &amp; Invoice History</string>
+    <string name="invoice_count_label">Invoices Count</string>
+    <string name="total_billed_label">Total Billed</string>
+    <string name="empty_account_invoices_title">No invoices for this client yet</string>
+    <string name="empty_account_invoices_description">Finalized tax invoices generated for this client will appear in billing history.</string>
+    <string name="view_document_action">View Document</string>
+    <string name="dashboard_finalized_invoices_label">Finalized Invoices</string>
+    <string name="dashboard_total_billed_label">Total Billed</string>
 </resources>
 

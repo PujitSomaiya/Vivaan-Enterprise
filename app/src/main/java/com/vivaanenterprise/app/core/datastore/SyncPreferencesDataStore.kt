@@ -9,21 +9,22 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class SyncPreferencesDataStore @Inject constructor(
+open class SyncPreferencesDataStore @Inject constructor(
     private val dataStore: DataStore<Preferences>
 ) {
     private object PreferenceKeys {
         val LAST_SYNC_TIMESTAMP = longPreferencesKey("last_sync_timestamp")
     }
 
-    suspend fun getLastSyncTimestamp(): Long {
+    open suspend fun getLastSyncTimestamp(): Long {
         val prefs = dataStore.data.first()
         return prefs[PreferenceKeys.LAST_SYNC_TIMESTAMP] ?: 0L
     }
 
-    suspend fun setLastSyncTimestamp(timestamp: Long) {
+    open suspend fun setLastSyncTimestamp(timestamp: Long) {
         dataStore.edit { prefs ->
             prefs[PreferenceKeys.LAST_SYNC_TIMESTAMP] = timestamp
         }
     }
 }
+

@@ -4,20 +4,14 @@ import com.vivaanenterprise.app.domain.model.Client
 import com.vivaanenterprise.app.domain.model.DocumentCalculationResult
 import com.vivaanenterprise.app.domain.model.Product
 
+import com.vivaanenterprise.app.feature.document.presentation.model.DocumentLineUiState
+
 enum class InvoiceMode {
     NEW,
     EDIT_DRAFT
 }
 
-data class InvoiceLineUiState(
-    val id: String,
-    val selectedProduct: Product? = null,
-    val quantityInput: String = "1",
-    val rateInput: String = "",
-    val quantityError: String? = null,
-    val rateError: String? = null,
-    val productError: String? = null
-)
+typealias InvoiceLineUiState = DocumentLineUiState
 
 data class InvoiceUiState(
     val mode: InvoiceMode = InvoiceMode.NEW,

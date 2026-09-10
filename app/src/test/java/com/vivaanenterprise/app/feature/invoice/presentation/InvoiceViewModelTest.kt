@@ -625,6 +625,7 @@ class InvoiceViewModelTest {
         var finalizeResultOverride: DocumentFinalizationResult? = null
         val storedDocs = mutableMapOf<String, BusinessDocument>()
 
+        override fun observeAllDocuments(): Flow<List<BusinessDocument>> = MutableStateFlow(storedDocs.values.toList())
         override fun observeDocumentById(id: String): Flow<BusinessDocument?> = MutableStateFlow(storedDocs[id])
         override fun observeDocumentsByType(type: DocumentType): Flow<List<BusinessDocument>> = MutableStateFlow(emptyList())
         override fun observeDocumentsByClient(clientId: String): Flow<List<BusinessDocument>> = MutableStateFlow(emptyList())

@@ -77,7 +77,7 @@ class PdfServicesTest {
     fun setUp() {
         context = InstrumentationRegistry.getInstrumentation().targetContext
         sanitizer = PdfFilenameSanitizer()
-        cacheManager = PdfCacheManager(context)
+        cacheManager = PdfCacheManager(context, sanitizer)
         shareManager = PdfShareManager(context, sanitizer)
         exportManager = PdfExportManager(context, sanitizer)
     }

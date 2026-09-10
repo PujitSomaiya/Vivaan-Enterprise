@@ -19,6 +19,9 @@ interface BusinessDocumentDao {
     @Query("SELECT * FROM business_documents WHERE id = :id AND isDeleted = 0")
     fun observeById(id: String): Flow<BusinessDocumentEntity?>
 
+    @Query("SELECT * FROM business_documents WHERE isDeleted = 0 ORDER BY documentDate DESC, updatedAt DESC, id DESC")
+    fun observeAllDocuments(): Flow<List<BusinessDocumentEntity>>
+
     @Query("SELECT * FROM business_documents WHERE documentType = :type AND isDeleted = 0 ORDER BY documentDate DESC, createdAt DESC")
     fun observeDocumentsByType(type: DocumentType): Flow<List<BusinessDocumentEntity>>
 
@@ -33,4 +36,11 @@ interface BusinessDocumentDao {
 
     @Query("UPDATE business_documents SET isDeleted = 1, deletedAt = :deletedAt, updatedAt = :updatedAt, syncStatus = :syncStatus WHERE id = :id")
     suspend fun softDelete(id: String, deletedAt: Long, updatedAt: Long, syncStatus: SyncStatus = SyncStatus.PENDING)
+    @Query("SELECT COUNT(*) AS count, COALESCE(SUM(grandTotalPaise), 0) AS totalBilledPaise FROM business_documents WHERE documentType = 'TAX_INVOICE' AND status = 'FINALIZED' AND isDeleted = 0")
+    fun observeDashboardSummary(): Flow<DashboardSummaryProjection>
 }
+
+data class DashboardSummaryProjection(
+    val count: Int,
+    val totalBilledPaise: Long
+)

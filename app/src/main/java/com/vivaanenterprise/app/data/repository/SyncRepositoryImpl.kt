@@ -183,8 +183,11 @@ class SyncRepositoryImpl @Inject constructor(
             syncPreferencesDataStore.setLastSyncTimestamp(syncStartTime)
 
             Result.success(Unit)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 }
+

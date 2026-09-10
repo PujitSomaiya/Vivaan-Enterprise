@@ -1,4 +1,4 @@
-package com.vivaanenterprise.app.feature.invoice.presentation.components
+package com.vivaanenterprise.app.feature.document.presentation.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -30,25 +30,25 @@ import androidx.compose.ui.Modifier
 import com.vivaanenterprise.app.core.designsystem.component.AppCard
 import com.vivaanenterprise.app.core.designsystem.component.AppSearchField
 import com.vivaanenterprise.app.core.designsystem.theme.AppTheme
-import com.vivaanenterprise.app.domain.model.Product
+import com.vivaanenterprise.app.domain.model.Client
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProductSelectorBottomSheet(
-    products: List<Product>,
-    selectedProduct: Product?,
-    onSelectProduct: (Product) -> Unit,
+fun ClientSelectorBottomSheet(
+    clients: List<Client>,
+    selectedClient: Client?,
+    onSelectClient: (Client) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var searchQuery by remember { mutableStateOf("") }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    val filteredProducts = remember(products, searchQuery) {
-        if (searchQuery.isBlank()) products
-        else products.filter {
-            it.name.contains(searchQuery, ignoreCase = true) ||
-                    (it.hsnSac?.contains(searchQuery, ignoreCase = true) == true)
+    val filteredClients = remember(clients, searchQuery) {
+        if (searchQuery.isBlank()) clients
+        else clients.filter {
+            it.companyName.contains(searchQuery, ignoreCase = true) ||
+                    (it.gstin?.contains(searchQuery, ignoreCase = true) == true)
         }
     }
 
@@ -68,7 +68,7 @@ fun ProductSelectorBottomSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Select Product",
+                    text = "Select Client",
                     style = AppTheme.typography.titleMedium,
                     color = AppTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
@@ -83,13 +83,13 @@ fun ProductSelectorBottomSheet(
             AppSearchField(
                 query = searchQuery,
                 onQueryChange = { searchQuery = it },
-                placeholder = "Search product by name or HSN/SAC...",
+                placeholder = "Search client by name or GSTIN...",
                 modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(AppTheme.spacing.md))
 
-            if (filteredProducts.isEmpty()) {
+            if (filteredClients.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -97,7 +97,7 @@ fun ProductSelectorBottomSheet(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No products found",
+                        text = "No clients found",
                         style = AppTheme.typography.bodyMedium,
                         color = AppTheme.colorScheme.onSurfaceVariant
                     )
@@ -107,18 +107,16 @@ fun ProductSelectorBottomSheet(
                     modifier = Modifier.weight(1f)
                 ) {
                     items(
-                        items = filteredProducts,
+                        items = filteredClients,
                         key = { it.id }
-                    ) { product ->
-                        val isSelected = product.id == selectedProduct?.id
-                        val gstPercent = com.vivaanenterprise.app.core.pdf.PdfFormattingUtils.formatGstRateBasisPoints(product.defaultGstRateBasisPoints)
-
+                    ) { client ->
+                        val isSelected = client.id == selectedClient?.id
                         AppCard(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = AppTheme.spacing.xs)
                                 .clickable {
-                                    onSelectProduct(product)
+                                    onSelectClient(client)
                                     onDismiss()
                                 }
                         ) {
@@ -131,7 +129,7 @@ fun ProductSelectorBottomSheet(
                                 RadioButton(
                                     selected = isSelected,
                                     onClick = {
-                                        onSelectProduct(product)
+                                        onSelectClient(client)
                                         onDismiss()
                                     }
                                 )
@@ -141,19 +139,25 @@ fun ProductSelectorBottomSheet(
                                         .padding(start = AppTheme.spacing.xs)
                                 ) {
                                     Text(
-                                        text = product.name,
+                                        text = client.companyName,
                                         style = AppTheme.typography.titleMedium,
                                         color = AppTheme.colorScheme.onSurface
                                     )
-                                    val details = listOfNotNull(
-                                        product.hsnSac?.let { "HSN/SAC: $it" },
-                                        "GST: $gstPercent%"
-                                    ).joinToString(" | ")
-                                    Text(
-                                        text = details,
-                                        style = AppTheme.typography.bodySmall,
-                                        color = AppTheme.colorScheme.onSurfaceVariant
-                                    )
+                                    if (!client.gstin.isNullOrBlank()) {
+                                        Text(
+                                            text = "GSTIN: ${client.gstin}",
+                                            style = AppTheme.typography.bodySmall,
+                                            color = AppTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    val location = listOfNotNull(client.state, client.stateCode).joinToString(" — ")
+                                    if (location.isNotBlank()) {
+                                        Text(
+                                            text = "State: $location",
+                                            style = AppTheme.typography.bodySmall,
+                                            color = AppTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
                             }
                         }

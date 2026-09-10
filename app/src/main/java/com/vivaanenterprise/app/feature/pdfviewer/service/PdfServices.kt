@@ -45,14 +45,15 @@ class PdfFilenameSanitizer @Inject constructor() {
 
 @Singleton
 open class PdfCacheManager @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val sanitizer: PdfFilenameSanitizer
 ) {
     private val cacheDir: File
         get() = File(context.cacheDir, "pdfs").apply { if (!exists()) mkdirs() }
 
     open suspend fun writePdfToCache(documentId: String, pdfBytes: ByteArray): File = withContext(Dispatchers.IO) {
         cleanupStaleCache()
-        val safeDocId = PdfFilenameSanitizer().sanitizeFilename(documentId).ifBlank { "doc" }
+        val safeDocId = sanitizer.sanitizeFilename(documentId).ifBlank { "doc" }
         val finalFile = File(cacheDir, "pdf_${safeDocId}.pdf")
         val tmpFile = File(cacheDir, "pdf_${safeDocId}_${System.currentTimeMillis()}.tmp")
 
@@ -85,11 +86,6 @@ open class PdfCacheManager @Inject constructor(
                     finalPath,
                     java.nio.file.StandardCopyOption.REPLACE_EXISTING
                 )
-            } catch (e: Exception) {
-                if (!tmpFile.renameTo(finalFile)) {
-                    tmpFile.copyTo(finalFile, overwrite = true)
-                    tmpFile.delete()
-                }
             }
             finalFile
         } catch (ce: CancellationException) {
@@ -102,7 +98,7 @@ open class PdfCacheManager @Inject constructor(
     }
 
     open fun getCachedPdf(documentId: String): File? {
-        val safeDocId = PdfFilenameSanitizer().sanitizeFilename(documentId).ifBlank { "doc" }
+        val safeDocId = sanitizer.sanitizeFilename(documentId).ifBlank { "doc" }
         val file = File(cacheDir, "pdf_${safeDocId}.pdf")
         val basePath = cacheDir.canonicalFile.toPath()
         val candidatePath = file.canonicalFile.toPath()
