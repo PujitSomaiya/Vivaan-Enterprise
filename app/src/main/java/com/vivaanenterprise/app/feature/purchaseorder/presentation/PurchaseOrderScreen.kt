@@ -89,13 +89,7 @@ fun PurchaseOrderRoute(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
         onIntent = viewModel::onIntent,
-        onNavigateBackRequest = {
-            if (uiState.isDirty) {
-                // Handled via discard dialog in screen
-            } else {
-                onNavigateBack()
-            }
-        },
+        onNavigateBack = onNavigateBack,
         modifier = modifier
     )
 }
@@ -106,7 +100,7 @@ fun PurchaseOrderScreen(
     uiState: PurchaseOrderUiState,
     snackbarHostState: SnackbarHostState,
     onIntent: (PurchaseOrderUiIntent) -> Unit,
-    onNavigateBackRequest: () -> Unit,
+    onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showDiscardDialog by remember { mutableStateOf(false) }
@@ -115,16 +109,8 @@ fun PurchaseOrderScreen(
     var showPosSheet by remember { mutableStateOf(false) }
     var isMetadataExpanded by remember { mutableStateOf(false) }
 
-    fun handleBackAttempt() {
-        if (uiState.isDirty) {
-            showDiscardDialog = true
-        } else {
-            onNavigateBackRequest()
-        }
-    }
-
-    BackHandler(enabled = true) {
-        handleBackAttempt()
+    BackHandler(enabled = uiState.isDirty) {
+        showDiscardDialog = true
     }
 
     if (showDiscardDialog) {
@@ -136,7 +122,7 @@ fun PurchaseOrderScreen(
                 TextButton(
                     onClick = {
                         showDiscardDialog = false
-                        onNavigateBackRequest()
+                        onNavigateBack()
                     }
                 ) {
                     Text("Discard", color = AppTheme.colorScheme.error)
@@ -233,7 +219,13 @@ fun PurchaseOrderScreen(
         topBar = {
             AppTopBar(
                 title = title,
-                onBackClick = { handleBackAttempt() }
+                onBackClick = {
+                    if (uiState.isDirty) {
+                        showDiscardDialog = true
+                    } else {
+                        onNavigateBack()
+                    }
+                }
             )
         },
         snackbarHostState = snackbarHostState
@@ -561,7 +553,7 @@ private fun PurchaseOrderScreenPreview() {
             ),
             snackbarHostState = remember { SnackbarHostState() },
             onIntent = {},
-            onNavigateBackRequest = {}
+            onNavigateBack = {}
         )
     }
 }
