@@ -75,6 +75,13 @@ fun DashboardScreen(
     modifier: Modifier = Modifier
 ) {
     var showSignOutDialog by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+
+    // Double-back exit handler on Dashboard (disabled if sign-out dialog is showing so back dismisses dialog first)
+    com.vivaanenterprise.app.core.common.util.DoubleBackToExitHandler(
+        snackbarHostState = snackbarHostState,
+        enabled = !showSignOutDialog
+    )
 
     if (showSignOutDialog) {
         AlertDialog(
@@ -114,7 +121,8 @@ fun DashboardScreen(
                     }
                 }
             )
-        }
+        },
+        snackbarHostState = snackbarHostState
     ) { innerPadding ->
         Column(
             modifier = Modifier

@@ -13,10 +13,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -42,6 +44,7 @@ import com.vivaanenterprise.app.domain.model.Client
 fun ClientListRoute(
     onNavigateToDetail: (String) -> Unit,
     onNavigateToAddClient: () -> Unit,
+    onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ClientListViewModel = hiltViewModel()
 ) {
@@ -59,6 +62,7 @@ fun ClientListRoute(
     ClientListScreen(
         uiState = uiState,
         onIntent = viewModel::onIntent,
+        onNavigateBack = onNavigateBack,
         modifier = modifier
     )
 }
@@ -68,13 +72,22 @@ fun ClientListRoute(
 fun ClientListScreen(
     uiState: ClientListUiState,
     onIntent: (ClientListUiIntent) -> Unit,
+    onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     AppScaffold(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text(text = stringResource(R.string.clients_title)) }
+                title = { Text(text = stringResource(R.string.clients_title)) },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.nav_back_desc)
+                        )
+                    }
+                }
             )
         },
         floatingActionButton = {
@@ -222,7 +235,8 @@ private fun ClientListContentPreview() {
                     )
                 )
             ),
-            onIntent = {}
+            onIntent = {},
+            onNavigateBack = {}
         )
     }
 }
@@ -233,7 +247,8 @@ private fun ClientListEmptyPreview() {
     VivaanEnterpriseTheme {
         ClientListScreen(
             uiState = ClientListUiState(clients = emptyList()),
-            onIntent = {}
+            onIntent = {},
+            onNavigateBack = {}
         )
     }
 }

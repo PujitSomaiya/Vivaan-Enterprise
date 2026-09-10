@@ -187,7 +187,8 @@ fun AppNavHost(
                         },
                         onNavigateToAddClient = {
                             navController.navigateToAddClient()
-                        }
+                        },
+                        onNavigateBack = { navController.popBackStack() }
                     )
                 }
 
