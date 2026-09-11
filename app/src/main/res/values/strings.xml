@@ -37,6 +37,9 @@
     <string name="sign_out_dialog_title">Sign Out</string>
     <string name="sign_out_dialog_message">Are you sure you want to sign out of Vivaan Enterprise?</string>
     <string name="press_back_again_to_exit">Press back again to exit</string>
+    <string name="developer_credit_prefix">Developed by </string>
+    <string name="developer_credit_name">Pujit Somaiya</string>
+    <string name="developer_credit_portfolio_url">https://pujitsomaiya.vercel.app/</string>
     <string name="confirm_action">Confirm</string>
     <string name="cancel_action">Cancel</string>
     <!-- Client Feature String Resources -->

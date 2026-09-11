@@ -205,6 +205,10 @@ fun DashboardScreen(
                     modifier = Modifier.weight(1f)
                 )
             }
+
+            Spacer(modifier = Modifier.height(AppTheme.spacing.xs))
+
+            com.vivaanenterprise.app.core.designsystem.component.DeveloperCredit()
         }
     }
 }

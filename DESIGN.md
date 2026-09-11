@@ -135,4 +135,5 @@ When Step 3 implements the design system, it will build the following atomic Com
 - **Launcher Icon**: Clean VE monogram centered within the adaptive-icon safe zone (27dp–81dp within 108dp viewport). No inner card/badge frame to prevent double-masking by OS masks. Includes monochrome themed icon support.
 - **Splash Screen**: Safe-padded `ic_splash_logo` centered within 288dp viewport on Navy Blue (`#334E68`) background.
 - **Guidelines**: No gradients, no cartoon graphics, no 3D reflections. Must remain clean and legible across circle, squircle, and rounded-square launcher masks.
+- **Developer Credit**: Dashboard contains a low-emphasis developer credit footer ("Developed by Pujit Somaiya"). It must use secondary typography/color (`labelSmall` / `onSurfaceVariant`) and must never appear in generated business documents or PDFs.
 
