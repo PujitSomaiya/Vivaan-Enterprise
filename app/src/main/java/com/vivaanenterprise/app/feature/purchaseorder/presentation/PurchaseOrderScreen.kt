@@ -38,7 +38,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.foundation.lazy.rememberLazyListState
 import com.vivaanenterprise.app.R
+import com.vivaanenterprise.app.core.designsystem.component.AppErrorDialog
 import com.vivaanenterprise.app.core.designsystem.component.AppErrorState
 import com.vivaanenterprise.app.core.designsystem.component.AppLoadingState
 import com.vivaanenterprise.app.core.designsystem.component.AppPrimaryButton
@@ -89,13 +91,7 @@ fun PurchaseOrderRoute(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
         onIntent = viewModel::onIntent,
-        onNavigateBackRequest = {
-            if (uiState.isDirty) {
-                // Handled via discard dialog in screen
-            } else {
-                onNavigateBack()
-            }
-        },
+        onNavigateBack = onNavigateBack,
         modifier = modifier
     )
 }
@@ -106,7 +102,7 @@ fun PurchaseOrderScreen(
     uiState: PurchaseOrderUiState,
     snackbarHostState: SnackbarHostState,
     onIntent: (PurchaseOrderUiIntent) -> Unit,
-    onNavigateBackRequest: () -> Unit,
+    onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showDiscardDialog by remember { mutableStateOf(false) }
@@ -114,17 +110,45 @@ fun PurchaseOrderScreen(
     var showClientSheet by remember { mutableStateOf(false) }
     var showPosSheet by remember { mutableStateOf(false) }
     var isMetadataExpanded by remember { mutableStateOf(false) }
+    val listState = rememberLazyListState()
 
-    fun handleBackAttempt() {
-        if (uiState.isDirty) {
-            showDiscardDialog = true
-        } else {
-            onNavigateBackRequest()
+    BackHandler(enabled = uiState.isDirty) {
+        showDiscardDialog = true
+    }
+
+    // Non-field operation error dialog
+    uiState.generalError?.let { err ->
+        if (uiState.availableClients.isNotEmpty()) {
+            AppErrorDialog(
+                message = err,
+                onDismiss = { onIntent(PurchaseOrderUiIntent.OnClearGeneralError) }
+            )
         }
     }
 
-    BackHandler(enabled = true) {
-        handleBackAttempt()
+    // Auto-scroll to first field error if any validation error occurs
+    val hasFieldErrors = uiState.documentNumberError != null ||
+            uiState.clientError != null ||
+            uiState.deliveryFactoryAddressError != null ||
+            uiState.placeOfSupplyError != null ||
+            uiState.lineItems.any { it.productError != null || it.quantityError != null || it.rateError != null }
+
+    LaunchedEffect(hasFieldErrors) {
+        if (hasFieldErrors) {
+            when {
+                uiState.documentNumberError != null || uiState.clientError != null || uiState.deliveryFactoryAddressError != null || uiState.placeOfSupplyError != null -> {
+                    listState.animateScrollToItem(0)
+                }
+                uiState.lineItems.any { it.productError != null || it.quantityError != null || it.rateError != null } -> {
+                    val firstInvalidIndex = uiState.lineItems.indexOfFirst {
+                        it.productError != null || it.quantityError != null || it.rateError != null
+                    }
+                    if (firstInvalidIndex >= 0) {
+                        listState.animateScrollToItem(firstInvalidIndex + 2)
+                    }
+                }
+            }
+        }
     }
 
     if (showDiscardDialog) {
@@ -136,7 +160,7 @@ fun PurchaseOrderScreen(
                 TextButton(
                     onClick = {
                         showDiscardDialog = false
-                        onNavigateBackRequest()
+                        onNavigateBack()
                     }
                 ) {
                     Text("Discard", color = AppTheme.colorScheme.error)
@@ -233,7 +257,13 @@ fun PurchaseOrderScreen(
         topBar = {
             AppTopBar(
                 title = title,
-                onBackClick = { handleBackAttempt() }
+                onBackClick = {
+                    if (uiState.isDirty) {
+                        showDiscardDialog = true
+                    } else {
+                        onNavigateBack()
+                    }
+                }
             )
         },
         snackbarHostState = snackbarHostState
@@ -251,22 +281,13 @@ fun PurchaseOrderScreen(
             }
             else -> {
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
                         .padding(horizontal = AppTheme.spacing.md),
                     verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.md)
                 ) {
-                    item {
-                        uiState.generalError?.let { err ->
-                            AppErrorState(
-                                message = err,
-                                onRetryClick = { onIntent(PurchaseOrderUiIntent.OnClearGeneralError) },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    }
-
                     item {
                         Spacer(modifier = Modifier.height(AppTheme.spacing.xs))
                         AppSectionHeader(title = "Header Information")
@@ -292,20 +313,16 @@ fun PurchaseOrderScreen(
                             value = formattedDate,
                             onValueChange = {},
                             label = "PO Date *",
-                            readOnly = true,
+                            onClick = { showDatePickerDialog = true },
                             trailingIcon = {
                                 Text(
                                     text = "Change",
                                     style = AppTheme.typography.labelMedium,
                                     color = AppTheme.colorScheme.primary,
-                                    modifier = Modifier
-                                        .padding(end = AppTheme.spacing.xs)
-                                        .clickable { showDatePickerDialog = true }
+                                    modifier = Modifier.padding(end = AppTheme.spacing.xs)
                                 )
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { showDatePickerDialog = true }
+                            modifier = Modifier.fillMaxWidth()
                         )
 
                         Spacer(modifier = Modifier.height(AppTheme.spacing.sm))
@@ -315,18 +332,15 @@ fun PurchaseOrderScreen(
                             value = uiState.selectedClient?.companyName ?: "",
                             onValueChange = {},
                             label = "Supplier / Client *",
-                            readOnly = true,
+                            onClick = { showClientSheet = true },
                             errorText = uiState.clientError,
                             trailingIcon = {
                                 Icon(
                                     imageVector = Icons.Default.KeyboardArrowDown,
-                                    contentDescription = "Select Supplier / Client",
-                                    modifier = Modifier.clickable { showClientSheet = true }
+                                    contentDescription = "Select Supplier / Client"
                                 )
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { showClientSheet = true }
+                            modifier = Modifier.fillMaxWidth()
                         )
 
                         Spacer(modifier = Modifier.height(AppTheme.spacing.sm))
@@ -352,18 +366,15 @@ fun PurchaseOrderScreen(
                             value = posDisplayText,
                             onValueChange = {},
                             label = "Place of Supply *",
-                            readOnly = true,
+                            onClick = { showPosSheet = true },
                             errorText = uiState.placeOfSupplyError,
                             trailingIcon = {
                                 Icon(
                                     imageVector = Icons.Default.KeyboardArrowDown,
-                                    contentDescription = "Select Place of Supply",
-                                    modifier = Modifier.clickable { showPosSheet = true }
+                                    contentDescription = "Select Place of Supply"
                                 )
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { showPosSheet = true }
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
 
@@ -561,7 +572,7 @@ private fun PurchaseOrderScreenPreview() {
             ),
             snackbarHostState = remember { SnackbarHostState() },
             onIntent = {},
-            onNavigateBackRequest = {}
+            onNavigateBack = {}
         )
     }
 }

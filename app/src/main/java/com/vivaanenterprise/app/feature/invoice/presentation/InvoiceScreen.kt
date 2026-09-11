@@ -37,7 +37,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.foundation.lazy.rememberLazyListState
 import com.vivaanenterprise.app.R
+import com.vivaanenterprise.app.core.designsystem.component.AppErrorDialog
 import com.vivaanenterprise.app.core.designsystem.component.AppErrorState
 import com.vivaanenterprise.app.core.designsystem.component.AppLoadingState
 import com.vivaanenterprise.app.core.designsystem.component.AppPrimaryButton
@@ -102,9 +104,44 @@ fun InvoiceScreen(
     var showDatePicker by remember { mutableStateOf(false) }
     var showDiscardDialog by remember { mutableStateOf(false) }
     var showMetadataSection by remember { mutableStateOf(false) }
+    val listState = rememberLazyListState()
 
     BackHandler(enabled = uiState.isDirty) {
         showDiscardDialog = true
+    }
+
+    // Non-field operation error dialog
+    uiState.generalError?.let { err ->
+        if (uiState.availableClients.isNotEmpty()) {
+            AppErrorDialog(
+                message = err,
+                onDismiss = { onIntent(InvoiceUiIntent.OnClearGeneralError) }
+            )
+        }
+    }
+
+    // Auto-scroll to first field error if any validation error occurs
+    val hasFieldErrors = uiState.documentNumberError != null ||
+            uiState.clientError != null ||
+            uiState.placeOfSupplyError != null ||
+            uiState.lineItems.any { it.productError != null || it.quantityError != null || it.rateError != null }
+
+    LaunchedEffect(hasFieldErrors) {
+        if (hasFieldErrors) {
+            when {
+                uiState.documentNumberError != null || uiState.clientError != null || uiState.placeOfSupplyError != null -> {
+                    listState.animateScrollToItem(0)
+                }
+                uiState.lineItems.any { it.productError != null || it.quantityError != null || it.rateError != null } -> {
+                    val firstInvalidIndex = uiState.lineItems.indexOfFirst {
+                        it.productError != null || it.quantityError != null || it.rateError != null
+                    }
+                    if (firstInvalidIndex >= 0) {
+                        listState.animateScrollToItem(firstInvalidIndex + 2) // header item = 0, line header = 1
+                    }
+                }
+            }
+        }
     }
 
     if (showClientSheet) {
@@ -220,21 +257,13 @@ fun InvoiceScreen(
             }
             else -> {
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
                         .padding(horizontal = AppTheme.spacing.md),
                     verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.md)
                 ) {
-                    item {
-                        uiState.generalError?.let { err ->
-                            AppErrorState(
-                                message = err,
-                                onRetryClick = { onIntent(InvoiceUiIntent.OnClearGeneralError) },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    }
                     item {
                         Spacer(modifier = Modifier.height(AppTheme.spacing.xs))
                         AppSectionHeader(title = "Header Information")
@@ -260,20 +289,16 @@ fun InvoiceScreen(
                             value = formattedDate,
                             onValueChange = {},
                             label = "Invoice Date *",
-                            readOnly = true,
+                            onClick = { showDatePicker = true },
                             trailingIcon = {
                                 Text(
                                     text = "Change",
                                     style = AppTheme.typography.labelMedium,
                                     color = AppTheme.colorScheme.primary,
-                                    modifier = Modifier
-                                        .padding(end = AppTheme.spacing.xs)
-                                        .clickable { showDatePicker = true }
+                                    modifier = Modifier.padding(end = AppTheme.spacing.xs)
                                 )
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { showDatePicker = true }
+                            modifier = Modifier.fillMaxWidth()
                         )
 
                         Spacer(modifier = Modifier.height(AppTheme.spacing.sm))
@@ -283,18 +308,26 @@ fun InvoiceScreen(
                             value = uiState.selectedClient?.companyName ?: "",
                             onValueChange = {},
                             label = "Client *",
-                            readOnly = true,
+                            onClick = { showClientSheet = true },
                             errorText = uiState.clientError,
                             trailingIcon = {
                                 Icon(
                                     imageVector = Icons.Default.KeyboardArrowDown,
-                                    contentDescription = "Select Client",
-                                    modifier = Modifier.clickable { showClientSheet = true }
+                                    contentDescription = "Select Client"
                                 )
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { showClientSheet = true }
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(modifier = Modifier.height(AppTheme.spacing.sm))
+
+                        // Delivery / Factory Address
+                        AppTextField(
+                            value = uiState.deliveryFactoryAddress,
+                            onValueChange = { onIntent(InvoiceUiIntent.OnDeliveryFactoryAddressChange(it)) },
+                            label = "Delivery / Factory Address",
+                            errorText = uiState.deliveryFactoryAddressError,
+                            modifier = Modifier.fillMaxWidth()
                         )
 
                         Spacer(modifier = Modifier.height(AppTheme.spacing.sm))
@@ -309,18 +342,15 @@ fun InvoiceScreen(
                             value = posDisplayText,
                             onValueChange = {},
                             label = "Place of Supply *",
-                            readOnly = true,
+                            onClick = { showPlaceOfSupplySheet = true },
                             errorText = uiState.placeOfSupplyError,
                             trailingIcon = {
                                 Icon(
                                     imageVector = Icons.Default.KeyboardArrowDown,
-                                    contentDescription = "Select Place of Supply",
-                                    modifier = Modifier.clickable { showPlaceOfSupplySheet = true }
+                                    contentDescription = "Select Place of Supply"
                                 )
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { showPlaceOfSupplySheet = true }
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
 

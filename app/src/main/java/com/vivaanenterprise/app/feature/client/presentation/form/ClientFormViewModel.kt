@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+import com.vivaanenterprise.app.domain.model.IndianState
+
 @HiltViewModel
 class ClientFormViewModel @Inject constructor(
     private val clientRepository: ClientRepository,
@@ -43,13 +45,17 @@ class ClientFormViewModel @Inject constructor(
         viewModelScope.launch {
             val client = clientRepository.getClientById(id)
             if (client != null) {
+                val resolvedState = IndianState.findByCode(client.stateCode)
+                val canonicalStateName = resolvedState?.name ?: (client.state ?: "")
+                val canonicalStateCode = resolvedState?.code ?: (client.stateCode ?: "")
+
                 _uiState.update { current ->
                     current.copy(
                         companyName = client.companyName,
                         address = client.address ?: "",
                         gstin = client.gstin ?: "",
-                        state = client.state ?: "",
-                        stateCode = client.stateCode ?: "",
+                        state = canonicalStateName,
+                        stateCode = canonicalStateCode,
                         email = client.email ?: "",
                         phone = client.phone ?: "",
                         pan = client.pan ?: "",
@@ -70,8 +76,18 @@ class ClientFormViewModel @Inject constructor(
             is ClientFormUiIntent.CompanyNameChanged -> _uiState.update { it.copy(companyName = intent.value, companyNameError = null) }
             is ClientFormUiIntent.AddressChanged -> _uiState.update { it.copy(address = intent.value) }
             is ClientFormUiIntent.GstinChanged -> _uiState.update { it.copy(gstin = intent.value, gstinError = null) }
-            is ClientFormUiIntent.StateChanged -> _uiState.update { it.copy(state = intent.value) }
-            is ClientFormUiIntent.StateCodeChanged -> _uiState.update { it.copy(stateCode = intent.value, stateCodeError = null) }
+            is ClientFormUiIntent.StateSelected -> {
+                val indianState = IndianState.findByCode(intent.stateCode)
+                if (indianState != null) {
+                    _uiState.update {
+                        it.copy(
+                            state = indianState.name,
+                            stateCode = indianState.code,
+                            stateCodeError = null
+                        )
+                    }
+                }
+            }
             is ClientFormUiIntent.EmailChanged -> _uiState.update { it.copy(email = intent.value, emailError = null) }
             is ClientFormUiIntent.PhoneChanged -> _uiState.update { it.copy(phone = intent.value, phoneError = null) }
             is ClientFormUiIntent.PanChanged -> _uiState.update { it.copy(pan = intent.value, panError = null) }

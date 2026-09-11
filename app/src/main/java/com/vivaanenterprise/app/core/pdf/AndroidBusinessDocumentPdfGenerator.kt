@@ -23,14 +23,14 @@ import javax.inject.Singleton
 
 /**
  * Native Android implementation of [BusinessDocumentPdfGenerator] using [android.graphics.pdf.PdfDocument].
- * Renders A4 Tax Invoices and Purchase Orders strictly from frozen historical snapshots without reading current master data.
+ * Renders production-grade A4 Tax Invoices and Purchase Orders strictly from frozen historical snapshots without reading current master data.
  */
 @Singleton
 class AndroidBusinessDocumentPdfGenerator @Inject constructor(
     private val currencyFormatter: IndianCurrencyFormatter
 ) : BusinessDocumentPdfGenerator {
 
-    private fun createDateFormatter(): SimpleDateFormat = SimpleDateFormat("d MMM yyyy", Locale.ENGLISH).apply {
+    private fun createDateFormatter(): SimpleDateFormat = SimpleDateFormat("dd MMM yyyy", Locale.ENGLISH).apply {
         timeZone = TimeZone.getTimeZone("Asia/Kolkata")
     }
 
@@ -53,25 +53,24 @@ class AndroidBusinessDocumentPdfGenerator @Inject constructor(
         try {
             val pageCtx = PdfPageContext(pdfDoc)
             val dateFormatter = createDateFormatter()
-
             val isInvoice = document.documentType == DocumentType.TAX_INVOICE
 
-            // 1. Title Banner
-            drawTitleBanner(pageCtx, if (isInvoice) "TAX INVOICE" else "PURCHASE ORDER")
+            // 1. Top Brand Header with VE Monogram Logo & Document Title Badge
+            drawHeaderBlock(pageCtx, document, seller, isInvoice)
 
-            // 2. Header Grid (Seller Profile + Metadata Grid)
-            drawHeaderGrid(pageCtx, document, seller, isInvoice, dateFormatter)
+            // 2. Metadata Grid Block (Invoice/PO Number, Date, Place of Supply, Buyer Order, etc.)
+            drawMetadataGrid(pageCtx, document, isInvoice, dateFormatter)
 
-            // 3. Buyer / Delivery Block
-            drawBuyerAndDeliveryBlock(pageCtx, document, client, isInvoice)
+            // 3. Party Details (Bill To / Supplier & Delivery / Factory Address)
+            drawPartyAndDeliveryBlock(pageCtx, document, client, isInvoice)
 
             // 4. Line Items Table
-            drawLineItemsTable(pageCtx, document)
+            drawLineItemsTable(pageCtx, document, isInvoice)
 
             // 5. Totals & Tax Summary Block
             drawTotalsAndTaxSummary(pageCtx, document, isInterstate)
 
-            // 6. Bank Details, Declaration & Signature
+            // 6. Bank Details, Declaration & Authorised Signatory Block
             drawBankAndDeclarationBlock(pageCtx, seller, isInvoice)
 
             // 7. Footer
@@ -117,179 +116,308 @@ class AndroidBusinessDocumentPdfGenerator @Inject constructor(
 
     // ── Structural Layout Blocks ───────────────────────────────────────────────
 
-    private fun drawTitleBanner(ctx: PdfPageContext, title: String) {
-        val bannerHeight = 22f
-        ctx.canvas.drawRect(
-            PdfPageContext.MARGIN_LEFT,
-            ctx.currentY,
-            PdfPageContext.MARGIN_RIGHT,
-            ctx.currentY + bannerHeight,
-            ctx.paintFillHeader
-        )
-        ctx.canvas.drawRect(
-            PdfPageContext.MARGIN_LEFT,
-            ctx.currentY,
-            PdfPageContext.MARGIN_RIGHT,
-            ctx.currentY + bannerHeight,
-            ctx.paintLine
-        )
-
-        ctx.drawTextCentered(
-            title,
-            PdfPageContext.PAGE_WIDTH / 2f,
-            ctx.currentY + 15f,
-            ctx.textPaintHeaderLabel
-        )
-        ctx.currentY += bannerHeight
-    }
-
-    private fun drawHeaderGrid(
+    /**
+     * Top header section with native VE Monogram Vector Logo, Seller Identity, and Document Title.
+     * Operates strictly in TOP -> BOTTOM coordinate space. Measures all content first before drawing section frame.
+     */
+    private fun drawHeaderBlock(
         ctx: PdfPageContext,
         doc: BusinessDocument,
         seller: SellerSnapshot,
+        isInvoice: Boolean
+    ) {
+        val startY = ctx.currentY
+        val leftX = PdfPageContext.CONTENT_LEFT
+        val rightX = PdfPageContext.CONTENT_RIGHT
+        val width = PdfPageContext.CONTENT_WIDTH
+
+        // Logo coordinates & size
+        val logoSize = 36f
+        val logoX = leftX + PdfPageContext.TOKEN_PADDING_MEDIUM
+        val logoY = startY + PdfPageContext.TOKEN_PADDING_MEDIUM
+
+        val sellerTextX = logoX + logoSize + 12f
+        val sellerTextWidth = (width * 0.55f - logoSize - 20f).toInt()
+
+        val fullAddress = buildString {
+            if (seller.addressLine1.isNotBlank()) append(seller.addressLine1)
+            if (seller.addressLine2.isNotBlank()) {
+                if (isNotEmpty()) append("\n")
+                append(seller.addressLine2)
+            }
+            if (seller.cityStatePincode.isNotBlank()) {
+                if (isNotEmpty()) append("\n")
+                append(seller.cityStatePincode)
+            }
+        }
+
+        // --- PASS 1: Measurement ---
+        val titleFontHeight = ctx.measureSingleLineHeight(ctx.textPaintBrandTitle)
+        val addressHeight = ctx.measureWrappedTextHeight(fullAddress, ctx.textPaintRegular, sellerTextWidth)
+        val gstinHeight = if (seller.gstin.isNotBlank()) ctx.measureSingleLineHeight(ctx.textPaintBold) else 0f
+        val mobileHeight = if (seller.mobile.isNotBlank()) ctx.measureSingleLineHeight(ctx.textPaintRegular) else 0f
+
+        var requiredTextHeight = titleFontHeight + PdfPageContext.TOKEN_METADATA_GAP
+        if (addressHeight > 0f) {
+            requiredTextHeight += addressHeight + PdfPageContext.TOKEN_METADATA_GAP
+        }
+        if (gstinHeight > 0f) {
+            requiredTextHeight += gstinHeight + PdfPageContext.TOKEN_METADATA_GAP
+        }
+        if (mobileHeight > 0f) {
+            requiredTextHeight += mobileHeight + PdfPageContext.TOKEN_METADATA_GAP
+        }
+
+        val logoRequiredHeight = logoSize + (PdfPageContext.TOKEN_PADDING_MEDIUM * 2)
+        val docTitleFontHeight = ctx.measureSingleLineHeight(ctx.textPaintDocTitle)
+        val docSubTitleFontHeight = ctx.measureSingleLineHeight(ctx.textPaintSmall)
+        val rightTitleRequiredHeight = docTitleFontHeight + PdfPageContext.TOKEN_METADATA_GAP + docSubTitleFontHeight + (PdfPageContext.TOKEN_PADDING_MEDIUM * 2)
+
+        val headerContentHeight = maxOf(requiredTextHeight, logoRequiredHeight, rightTitleRequiredHeight)
+        val headerTotalHeight = maxOf(headerContentHeight + (PdfPageContext.TOKEN_PADDING_MEDIUM * 2), 68f)
+
+        // --- PASS 2: Drawing ---
+        // 1. Draw outer section border box
+        ctx.canvas.drawRect(leftX, startY, rightX, startY + headerTotalHeight, ctx.paintLine)
+
+        // 2. Draw VE Monogram Logo
+        ctx.drawVeLogo(logoX, logoY, logoSize)
+
+        // 3. Draw Seller Details (TOP-in, BOTTOM-out)
+        var topY = startY + PdfPageContext.TOKEN_PADDING_MEDIUM
+        topY = ctx.drawSingleLineFromTop(seller.businessName, sellerTextX, topY, ctx.textPaintBrandTitle)
+        topY += PdfPageContext.TOKEN_METADATA_GAP
+
+        if (fullAddress.isNotBlank()) {
+            topY = ctx.drawWrappedTextFromTop(fullAddress, sellerTextX, topY, ctx.textPaintRegular, sellerTextWidth)
+            topY += PdfPageContext.TOKEN_METADATA_GAP
+        }
+
+        if (seller.gstin.isNotBlank()) {
+            topY = ctx.drawSingleLineFromTop("GSTIN/UIN: ${seller.gstin}", sellerTextX, topY, ctx.textPaintBold)
+            topY += PdfPageContext.TOKEN_METADATA_GAP
+        }
+
+        if (seller.mobile.isNotBlank()) {
+            topY = ctx.drawSingleLineFromTop("Mobile: ${seller.mobile}", sellerTextX, topY, ctx.textPaintRegular)
+            topY += PdfPageContext.TOKEN_METADATA_GAP
+        }
+
+        // 4. Draw Right-Side Document Title Badge
+        val titleText = if (isInvoice) "TAX INVOICE" else "PURCHASE ORDER"
+        val titleX = rightX - PdfPageContext.TOKEN_PADDING_MEDIUM
+        var rightTopY = startY + PdfPageContext.TOKEN_PADDING_MEDIUM + 4f
+
+        rightTopY = ctx.drawSingleLineRightAlignedFromTop(titleText, titleX, rightTopY, ctx.textPaintDocTitle)
+        rightTopY += PdfPageContext.TOKEN_METADATA_GAP
+        ctx.drawSingleLineRightAlignedFromTop("Original for Recipient", titleX, rightTopY, ctx.textPaintSmall)
+
+        ctx.currentY = startY + headerTotalHeight
+    }
+
+    /**
+     * Continuation page header for multi-page document pagination.
+     */
+    private fun drawContinuationHeader(ctx: PdfPageContext, docNumber: String, isInvoice: Boolean) {
+        val startY = ctx.currentY
+        val leftX = PdfPageContext.CONTENT_LEFT
+        val rightX = PdfPageContext.CONTENT_RIGHT
+        val headerTitle = if (isInvoice) "TAX INVOICE" else "PURCHASE ORDER"
+        val headerHeight = 18f
+
+        ctx.canvas.drawRect(leftX, startY, rightX, startY + headerHeight, ctx.paintFillHeader)
+        ctx.canvas.drawRect(leftX, startY, rightX, startY + headerHeight, ctx.paintLine)
+
+        val topY = startY + 3f
+        ctx.drawSingleLineFromTop("$headerTitle — $docNumber (Contd.)", leftX + PdfPageContext.TOKEN_PADDING_MEDIUM, topY, ctx.textPaintHeaderLabel)
+        ctx.drawSingleLineRightAlignedFromTop("Page ${ctx.pageNumber}", rightX - PdfPageContext.TOKEN_PADDING_MEDIUM, topY, ctx.textPaintHeaderLabel)
+
+        ctx.currentY = startY + headerHeight
+    }
+
+    /**
+     * Structured document metadata grid.
+     */
+    private fun drawMetadataGrid(
+        ctx: PdfPageContext,
+        doc: BusinessDocument,
         isInvoice: Boolean,
         dateFormatter: SimpleDateFormat
     ) {
-        val gridWidth = PdfPageContext.CONTENT_WIDTH
-        val halfWidth = gridWidth / 2f
-        val leftX = PdfPageContext.MARGIN_LEFT
-        val midX = leftX + halfWidth
         val startY = ctx.currentY
+        val leftX = PdfPageContext.CONTENT_LEFT
+        val rightX = PdfPageContext.CONTENT_RIGHT
+        val width = PdfPageContext.CONTENT_WIDTH
+        val colWidth = width / 2f
+        val midX = leftX + colWidth
 
-        // Draw Left Seller Info
-        var leftY = startY + 12f
-        ctx.drawText(seller.businessName, leftX + 8f, leftY, ctx.textPaintTitle)
-        leftY += 12f
-        val addr1 = seller.addressLine1
-        if (addr1.isNotBlank()) {
-            leftY += ctx.drawWrappedText(addr1, leftX + 8f, leftY, ctx.textPaintRegular, (halfWidth - 16).toInt()) + 2f
-        }
-        val addr2 = seller.addressLine2
-        if (addr2.isNotBlank()) {
-            leftY += ctx.drawWrappedText(addr2, leftX + 8f, leftY, ctx.textPaintRegular, (halfWidth - 16).toInt()) + 2f
-        }
-        val cityState = seller.cityStatePincode
-        if (cityState.isNotBlank()) {
-            leftY += ctx.drawWrappedText(cityState, leftX + 8f, leftY, ctx.textPaintRegular, (halfWidth - 16).toInt()) + 2f
-        }
-        ctx.drawText("GSTIN/UIN: ${seller.gstin}", leftX + 8f, leftY + 10f, ctx.textPaintBold)
-        leftY += 14f
-        ctx.drawText("Mobile: ${seller.mobile}", leftX + 8f, leftY + 10f, ctx.textPaintRegular)
-        leftY += 14f
+        val leftItems = mutableListOf<Pair<String, String>>()
+        val rightItems = mutableListOf<Pair<String, String>>()
 
-        // Draw Right Metadata Grid
-        var rightY = startY + 12f
-        val numLabel = if (isInvoice) "Tax Invoice No." else "PO No."
-        drawMetadataLine(ctx, numLabel, doc.documentNumber, midX + 8f, rightY)
-        rightY += 12f
+        val docNumLabel = if (isInvoice) "Invoice No." else "PO No."
+        leftItems.add(docNumLabel to doc.documentNumber)
+        leftItems.add("Dated" to dateFormatter.format(Date(doc.documentDate)))
 
-        val dateStr = dateFormatter.format(Date(doc.documentDate))
-        drawMetadataLine(ctx, "Dated", dateStr, midX + 8f, rightY)
-        rightY += 12f
+        // Strict audit: Place of supply uses persisted doc.placeOfSupply without fallback to seller state
+        val stateCode = doc.placeOfSupply ?: ""
+        val posName = IndianState.ALL_STATES.find { it.code == stateCode }?.name
+        val posDisplay = if (!posName.isNullOrBlank()) "$posName ($stateCode)" else stateCode
+        if (posDisplay.isNotBlank()) {
+            leftItems.add("Place of Supply" to posDisplay)
+        }
 
         if (!doc.deliveryNote.isNullOrBlank()) {
-            drawMetadataLine(ctx, "Delivery Note", doc.deliveryNote, midX + 8f, rightY)
-            rightY += 12f
+            rightItems.add("Delivery Note" to doc.deliveryNote)
         }
         if (!doc.paymentTerms.isNullOrBlank()) {
-            drawMetadataLine(ctx, "Mode/Terms of Payment", doc.paymentTerms, midX + 8f, rightY)
-            rightY += 12f
+            rightItems.add("Payment Terms" to doc.paymentTerms)
         }
         if (!doc.supplierReference.isNullOrBlank()) {
-            drawMetadataLine(ctx, "Supplier's Ref.", doc.supplierReference, midX + 8f, rightY)
-            rightY += 12f
+            rightItems.add("Supplier Ref." to doc.supplierReference)
         }
         if (!doc.buyerOrderNumber.isNullOrBlank()) {
-            drawMetadataLine(ctx, "Buyer's Order No.", doc.buyerOrderNumber, midX + 8f, rightY)
-            rightY += 12f
+            rightItems.add("Buyer Order No." to doc.buyerOrderNumber)
         }
         if (doc.buyerOrderDate != null && doc.buyerOrderDate > 0L) {
-            drawMetadataLine(ctx, "Dated", dateFormatter.format(Date(doc.buyerOrderDate)), midX + 8f, rightY)
-            rightY += 12f
+            rightItems.add("Order Date" to dateFormatter.format(Date(doc.buyerOrderDate)))
         }
         if (!doc.destination.isNullOrBlank()) {
-            drawMetadataLine(ctx, "Destination", doc.destination, midX + 8f, rightY)
-            rightY += 12f
+            rightItems.add("Destination" to doc.destination)
         }
 
-        val boxHeight = maxOf(leftY - startY + 6f, rightY - startY + 6f, 80f)
+        val rowHeight = maxOf(ctx.measureSingleLineHeight(ctx.textPaintBold), ctx.measureSingleLineHeight(ctx.textPaintRegular)) + PdfPageContext.TOKEN_METADATA_GAP
+        val leftTotalHeight = leftItems.size * rowHeight
+        val rightTotalHeight = rightItems.size * rowHeight
+        val gridHeight = maxOf(leftTotalHeight, rightTotalHeight, 28f) + (PdfPageContext.TOKEN_PADDING_MEDIUM * 2)
 
-        // Outer box and dividing vertical line
-        ctx.canvas.drawRect(leftX, startY, PdfPageContext.MARGIN_RIGHT, startY + boxHeight, ctx.paintLine)
-        ctx.canvas.drawLine(midX, startY, midX, startY + boxHeight, ctx.paintLine)
+        ctx.canvas.drawRect(leftX, startY, rightX, startY + gridHeight, ctx.paintLine)
+        if (rightItems.isNotEmpty()) {
+            ctx.canvas.drawLine(midX, startY, midX, startY + gridHeight, ctx.paintLine)
+        }
 
-        ctx.currentY = startY + boxHeight
+        var leftTop = startY + PdfPageContext.TOKEN_PADDING_MEDIUM
+        leftItems.forEach { (label, value) ->
+            ctx.drawSingleLineFromTop("$label:", leftX + PdfPageContext.TOKEN_PADDING_MEDIUM, leftTop, ctx.textPaintBold)
+            ctx.drawSingleLineFromTop(value, leftX + 90f, leftTop, ctx.textPaintRegular)
+            leftTop += rowHeight
+        }
+
+        var rightTop = startY + PdfPageContext.TOKEN_PADDING_MEDIUM
+        rightItems.forEach { (label, value) ->
+            ctx.drawSingleLineFromTop("$label:", midX + PdfPageContext.TOKEN_PADDING_MEDIUM, rightTop, ctx.textPaintBold)
+            ctx.drawSingleLineFromTop(value, midX + 90f, rightTop, ctx.textPaintRegular)
+            rightTop += rowHeight
+        }
+
+        ctx.currentY = startY + gridHeight
     }
 
-    private fun drawMetadataLine(ctx: PdfPageContext, label: String, value: String, x: Float, y: Float) {
-        ctx.drawText("$label:", x, y, ctx.textPaintBold)
-        ctx.drawText(value, x + 95f, y, ctx.textPaintRegular)
-    }
-
-    private fun drawBuyerAndDeliveryBlock(
+    /**
+     * Buyer / Supplier details block and Delivery / Factory Address.
+     */
+    private fun drawPartyAndDeliveryBlock(
         ctx: PdfPageContext,
         doc: BusinessDocument,
         client: ClientSnapshot,
         isInvoice: Boolean
     ) {
         val startY = ctx.currentY
-        val leftX = PdfPageContext.MARGIN_LEFT
-        val gridWidth = PdfPageContext.CONTENT_WIDTH
+        val leftX = PdfPageContext.CONTENT_LEFT
+        val rightX = PdfPageContext.CONTENT_RIGHT
+        val width = PdfPageContext.CONTENT_WIDTH
 
-        // Subheader Banner
-        val headerTitle = if (isInvoice) "BILL TO" else "SUPPLIER PO DETAILS"
-        ctx.canvas.drawRect(leftX, startY, PdfPageContext.MARGIN_RIGHT, startY + 16f, ctx.paintFillHeader)
-        ctx.canvas.drawRect(leftX, startY, PdfPageContext.MARGIN_RIGHT, startY + 16f, ctx.paintLine)
-        ctx.drawText(headerTitle, leftX + 8f, startY + 11f, ctx.textPaintHeaderLabel)
+        val hasDeliveryAddr = !doc.deliveryFactoryAddress.isNullOrBlank()
+        val halfWidth = if (hasDeliveryAddr) width / 2f else width
+        val midX = leftX + halfWidth
 
-        var contentY = startY + 26f
-        ctx.drawText(client.companyName, leftX + 8f, contentY, ctx.textPaintBold)
-        contentY += 14f
+        // Subheader Banners
+        val partyHeaderTitle = if (isInvoice) "BILL TO (BUYER DETAILS)" else "SUPPLIER / VENDOR DETAILS"
+        val bannerHeight = 16f
 
+        ctx.canvas.drawRect(leftX, startY, rightX, startY + bannerHeight, ctx.paintFillHeader)
+        ctx.canvas.drawRect(leftX, startY, rightX, startY + bannerHeight, ctx.paintLine)
+        ctx.drawSingleLineFromTop(partyHeaderTitle, leftX + PdfPageContext.TOKEN_PADDING_MEDIUM, startY + 3f, ctx.textPaintHeaderLabel)
+
+        if (hasDeliveryAddr) {
+            ctx.canvas.drawLine(midX, startY, midX, startY + bannerHeight, ctx.paintLine)
+            ctx.drawSingleLineFromTop("DELIVERY / FACTORY ADDRESS", midX + PdfPageContext.TOKEN_PADDING_MEDIUM, startY + 3f, ctx.textPaintHeaderLabel)
+        }
+
+        val partyTextWidth = (halfWidth - (PdfPageContext.TOKEN_PADDING_MEDIUM * 2)).toInt()
+
+        // --- PASS 1: Calculate Party & Delivery heights ---
+        var buyerHeight = ctx.measureSingleLineHeight(ctx.textPaintBold) + PdfPageContext.TOKEN_METADATA_GAP
         if (!client.address.isNullOrBlank()) {
-            val addrHeight = ctx.drawWrappedText(client.address, leftX + 8f, contentY, ctx.textPaintRegular, (gridWidth - 16).toInt())
-            contentY += addrHeight + 4f
+            buyerHeight += ctx.measureWrappedTextHeight(client.address, ctx.textPaintRegular, partyTextWidth) + PdfPageContext.TOKEN_METADATA_GAP
         }
 
         val stateName = client.state ?: IndianState.ALL_STATES.find { it.code == client.stateCode }?.name ?: ""
         val stateLine = if (stateName.isNotBlank() || !client.stateCode.isNullOrBlank()) {
             "State: $stateName ${if (!client.stateCode.isNullOrBlank()) "(${client.stateCode})" else ""}"
         } else ""
+
         if (stateLine.isNotBlank()) {
-            ctx.drawText(stateLine, leftX + 8f, contentY, ctx.textPaintRegular)
-            contentY += 14f
+            buyerHeight += ctx.measureSingleLineHeight(ctx.textPaintRegular) + PdfPageContext.TOKEN_METADATA_GAP
+        }
+        if (!client.gstin.isNullOrBlank()) {
+            buyerHeight += ctx.measureSingleLineHeight(ctx.textPaintBold) + PdfPageContext.TOKEN_METADATA_GAP
+        }
+
+        val deliveryHeight = if (hasDeliveryAddr) {
+            ctx.measureWrappedTextHeight(doc.deliveryFactoryAddress!!, ctx.textPaintRegular, partyTextWidth) + PdfPageContext.TOKEN_METADATA_GAP
+        } else 0f
+
+        val bodyHeight = maxOf(buyerHeight, deliveryHeight, 45f) + (PdfPageContext.TOKEN_PADDING_MEDIUM * 2)
+        val totalBlockHeight = bannerHeight + bodyHeight
+
+        // --- PASS 2: Draw Party & Delivery Section ---
+        ctx.canvas.drawRect(leftX, startY, rightX, startY + totalBlockHeight, ctx.paintLine)
+        if (hasDeliveryAddr) {
+            ctx.canvas.drawLine(midX, startY + bannerHeight, midX, startY + totalBlockHeight, ctx.paintLine)
+        }
+
+        var partyTop = startY + bannerHeight + PdfPageContext.TOKEN_PADDING_MEDIUM
+        partyTop = ctx.drawSingleLineFromTop(client.companyName, leftX + PdfPageContext.TOKEN_PADDING_MEDIUM, partyTop, ctx.textPaintBold)
+        partyTop += PdfPageContext.TOKEN_METADATA_GAP
+
+        if (!client.address.isNullOrBlank()) {
+            partyTop = ctx.drawWrappedTextFromTop(client.address, leftX + PdfPageContext.TOKEN_PADDING_MEDIUM, partyTop, ctx.textPaintRegular, partyTextWidth)
+            partyTop += PdfPageContext.TOKEN_METADATA_GAP
+        }
+
+        if (stateLine.isNotBlank()) {
+            partyTop = ctx.drawSingleLineFromTop(stateLine, leftX + PdfPageContext.TOKEN_PADDING_MEDIUM, partyTop, ctx.textPaintRegular)
+            partyTop += PdfPageContext.TOKEN_METADATA_GAP
         }
 
         if (!client.gstin.isNullOrBlank()) {
-            ctx.drawText("GSTIN/UIN: ${client.gstin}", leftX + 8f, contentY, ctx.textPaintBold)
-            contentY += 12f
+            ctx.drawSingleLineFromTop("GSTIN/UIN: ${client.gstin}", leftX + PdfPageContext.TOKEN_PADDING_MEDIUM, partyTop, ctx.textPaintBold)
         }
 
-        if (!isInvoice && !doc.deliveryFactoryAddress.isNullOrBlank()) {
-            ctx.canvas.drawRect(leftX, contentY + 2f, PdfPageContext.MARGIN_RIGHT, contentY + 18f, ctx.paintFillHeader)
-            ctx.canvas.drawRect(leftX, contentY + 2f, PdfPageContext.MARGIN_RIGHT, contentY + 18f, ctx.paintLine)
-            ctx.drawText("DELIVERY / FACTORY ADDRESS", leftX + 8f, contentY + 13f, ctx.textPaintHeaderLabel)
-            contentY += 24f
-            contentY += ctx.drawWrappedText(doc.deliveryFactoryAddress, leftX + 8f, contentY, ctx.textPaintRegular, (gridWidth - 16).toInt()) + 4f
+        if (hasDeliveryAddr) {
+            var delTop = startY + bannerHeight + PdfPageContext.TOKEN_PADDING_MEDIUM
+            ctx.drawWrappedTextFromTop(doc.deliveryFactoryAddress!!, midX + PdfPageContext.TOKEN_PADDING_MEDIUM, delTop, ctx.textPaintRegular, partyTextWidth)
         }
 
-        val boxHeight = contentY - startY + 4f
-        ctx.canvas.drawRect(leftX, startY, PdfPageContext.MARGIN_RIGHT, startY + boxHeight, ctx.paintLine)
-        ctx.currentY = startY + boxHeight
+        ctx.currentY = startY + totalBlockHeight
     }
 
+    /**
+     * Line Items table with dynamic height measurement and multi-page handling.
+     */
     private fun drawLineItemsTable(
         ctx: PdfPageContext,
-        doc: BusinessDocument
+        doc: BusinessDocument,
+        isInvoice: Boolean
     ) {
-        val leftX = PdfPageContext.MARGIN_LEFT
-        val rightX = PdfPageContext.MARGIN_RIGHT
+        val leftX = PdfPageContext.CONTENT_LEFT
+        val rightX = PdfPageContext.CONTENT_RIGHT
         val tableWidth = PdfPageContext.CONTENT_WIDTH
 
         // Column widths
         val colSl = 30f
-        val colHsn = 60f
-        val colQty = 50f
+        val colHsn = 55f
+        val colQty = 45f
         val colRate = 75f
         val colAmount = 85f
         val colDesc = tableWidth - (colSl + colHsn + colQty + colRate + colAmount)
@@ -302,19 +430,24 @@ class AndroidBusinessDocumentPdfGenerator @Inject constructor(
         val xAmount = xRate + colRate
 
         val drawTableHeaders = {
+            if (ctx.pageNumber > 1) {
+                drawContinuationHeader(ctx, doc.documentNumber, isInvoice)
+            }
+
             val startY = ctx.currentY
             val headerHeight = 18f
             ctx.canvas.drawRect(leftX, startY, rightX, startY + headerHeight, ctx.paintFillHeader)
             ctx.canvas.drawRect(leftX, startY, rightX, startY + headerHeight, ctx.paintLine)
 
-            ctx.drawTextCentered("Sl.No", xSl + colSl / 2f, startY + 12f, ctx.textPaintHeaderLabel)
-            ctx.drawText("Description of Goods", xDesc + 4f, startY + 12f, ctx.textPaintHeaderLabel)
-            ctx.drawTextCentered("HSN/SAC", xHsn + colHsn / 2f, startY + 12f, ctx.textPaintHeaderLabel)
-            ctx.drawTextRightAligned("Quantity", xQty + colQty - 4f, startY + 12f, ctx.textPaintHeaderLabel)
-            ctx.drawTextRightAligned("Rate", xRate + colRate - 4f, startY + 12f, ctx.textPaintHeaderLabel)
-            ctx.drawTextRightAligned("Amount", rightX - 4f, startY + 12f, ctx.textPaintHeaderLabel)
+            val topY = startY + 3f
+            ctx.drawSingleLineCenteredFromTop("Sr.", xSl + colSl / 2f, topY, ctx.textPaintHeaderLabel)
+            ctx.drawSingleLineFromTop("Description of Goods / Services", xDesc + 4f, topY, ctx.textPaintHeaderLabel)
+            ctx.drawSingleLineCenteredFromTop("HSN/SAC", xHsn + colHsn / 2f, topY, ctx.textPaintHeaderLabel)
+            ctx.drawSingleLineRightAlignedFromTop("Qty", xQty + colQty - 4f, topY, ctx.textPaintHeaderLabel)
+            ctx.drawSingleLineRightAlignedFromTop("Rate (₹)", xRate + colRate - 4f, topY, ctx.textPaintHeaderLabel)
+            ctx.drawSingleLineRightAlignedFromTop("Taxable Amt (₹)", rightX - 4f, topY, ctx.textPaintHeaderLabel)
 
-            // Vertical Column Separator Lines
+            // Vertical Column Separators
             ctx.canvas.drawLine(xDesc, startY, xDesc, startY + headerHeight, ctx.paintLine)
             ctx.canvas.drawLine(xHsn, startY, xHsn, startY + headerHeight, ctx.paintLine)
             ctx.canvas.drawLine(xQty, startY, xQty, startY + headerHeight, ctx.paintLine)
@@ -328,108 +461,119 @@ class AndroidBusinessDocumentPdfGenerator @Inject constructor(
 
         doc.lineItems.forEachIndexed { index, item ->
             val descHeight = ctx.measureWrappedTextHeight(item.descriptionSnapshot, ctx.textPaintRegular, (colDesc - 8).toInt())
-            val rowHeight = maxOf(descHeight + 10f, 20f)
+            val rowHeight = maxOf(descHeight + 8f, 18f)
 
             ctx.ensureSpace(rowHeight, onNewPageHeader = drawTableHeaders)
 
             val rowStartY = ctx.currentY
-            val textY = rowStartY + 12f
+            val textTopY = rowStartY + 4f
 
-            ctx.drawTextCentered((index + 1).toString(), xSl + colSl / 2f, textY, ctx.textPaintRegular)
-            ctx.drawWrappedText(item.descriptionSnapshot, xDesc + 4f, rowStartY + 4f, ctx.textPaintRegular, (colDesc - 8).toInt())
-            ctx.drawTextCentered(item.hsnSacSnapshot ?: "", xHsn + colHsn / 2f, textY, ctx.textPaintRegular)
-            ctx.drawTextRightAligned(item.quantity.toString(), xQty + colQty - 4f, textY, ctx.textPaintRegular)
-            ctx.drawTextRightAligned(PdfFormattingUtils.formatPaiseToCurrency(item.ratePaise), xRate + colRate - 4f, textY, ctx.textPaintRegular)
-            ctx.drawTextRightAligned(PdfFormattingUtils.formatPaiseToCurrency(item.taxableAmountPaise), rightX - 4f, textY, ctx.textPaintBold)
+            ctx.drawSingleLineCenteredFromTop((index + 1).toString(), xSl + colSl / 2f, textTopY, ctx.textPaintRegular)
+            ctx.drawWrappedTextFromTop(item.descriptionSnapshot, xDesc + 4f, textTopY, ctx.textPaintRegular, (colDesc - 8).toInt())
+            ctx.drawSingleLineCenteredFromTop(item.hsnSacSnapshot ?: "", xHsn + colHsn / 2f, textTopY, ctx.textPaintRegular)
+            ctx.drawSingleLineRightAlignedFromTop(item.quantity.toString(), xQty + colQty - 4f, textTopY, ctx.textPaintRegular)
+            ctx.drawSingleLineRightAlignedFromTop(PdfFormattingUtils.formatPaiseToCurrency(item.ratePaise), xRate + colRate - 4f, textTopY, ctx.textPaintRegular)
+            ctx.drawSingleLineRightAlignedFromTop(PdfFormattingUtils.formatPaiseToCurrency(item.taxableAmountPaise), rightX - 4f, textTopY, ctx.textPaintBold)
 
-            // Draw Outer Row Grid Lines
-            ctx.canvas.drawRect(leftX, rowStartY, rightX, rowStartY + rowHeight, ctx.paintLine)
-            ctx.canvas.drawLine(xDesc, rowStartY, xDesc, rowStartY + rowHeight, ctx.paintLine)
-            ctx.canvas.drawLine(xHsn, rowStartY, xHsn, rowStartY + rowHeight, ctx.paintLine)
-            ctx.canvas.drawLine(xQty, rowStartY, xQty, rowStartY + rowHeight, ctx.paintLine)
-            ctx.canvas.drawLine(xRate, rowStartY, xRate, rowStartY + rowHeight, ctx.paintLine)
-            ctx.canvas.drawLine(xAmount, rowStartY, xAmount, rowStartY + rowHeight, ctx.paintLine)
+            // Draw Row Boundaries & Vertical Grid Separators
+            ctx.canvas.drawRect(leftX, rowStartY, rightX, rowStartY + rowHeight, ctx.paintThinLine)
+            ctx.canvas.drawLine(xDesc, rowStartY, xDesc, rowStartY + rowHeight, ctx.paintThinLine)
+            ctx.canvas.drawLine(xHsn, rowStartY, xHsn, rowStartY + rowHeight, ctx.paintThinLine)
+            ctx.canvas.drawLine(xQty, rowStartY, xQty, rowStartY + rowHeight, ctx.paintThinLine)
+            ctx.canvas.drawLine(xRate, rowStartY, xRate, rowStartY + rowHeight, ctx.paintThinLine)
+            ctx.canvas.drawLine(xAmount, rowStartY, xAmount, rowStartY + rowHeight, ctx.paintThinLine)
 
             ctx.currentY = rowStartY + rowHeight
         }
+
+        // Draw solid bottom border for line items table
+        ctx.canvas.drawLine(leftX, ctx.currentY, rightX, ctx.currentY, ctx.paintLine)
     }
 
+    /**
+     * Financial totals, amount in words, and tax summary block.
+     */
     private fun drawTotalsAndTaxSummary(
         ctx: PdfPageContext,
         doc: BusinessDocument,
         isInterstate: Boolean
     ) {
-        val leftX = PdfPageContext.MARGIN_LEFT
-        val rightX = PdfPageContext.MARGIN_RIGHT
-
-        ctx.ensureSpace(110f)
-
-        val startY = ctx.currentY
-        var lineY = startY + 12f
-
-        // Taxable Value
-        ctx.drawTextRightAligned("Taxable Value:", rightX - 120f, lineY, ctx.textPaintRegular)
-        ctx.drawTextRightAligned(PdfFormattingUtils.formatPaiseToCurrency(doc.taxableAmountPaise), rightX - 8f, lineY, ctx.textPaintBold)
-        lineY += 12f
-
-        if (isInterstate) {
-            ctx.drawTextRightAligned("IGST Amount:", rightX - 120f, lineY, ctx.textPaintRegular)
-            ctx.drawTextRightAligned(PdfFormattingUtils.formatPaiseToCurrency(doc.igstAmountPaise), rightX - 8f, lineY, ctx.textPaintRegular)
-            lineY += 12f
-        } else {
-            ctx.drawTextRightAligned("CGST Amount:", rightX - 120f, lineY, ctx.textPaintRegular)
-            ctx.drawTextRightAligned(PdfFormattingUtils.formatPaiseToCurrency(doc.cgstAmountPaise), rightX - 8f, lineY, ctx.textPaintRegular)
-            lineY += 12f
-            ctx.drawTextRightAligned("SGST Amount:", rightX - 120f, lineY, ctx.textPaintRegular)
-            ctx.drawTextRightAligned(PdfFormattingUtils.formatPaiseToCurrency(doc.sgstAmountPaise), rightX - 8f, lineY, ctx.textPaintRegular)
-            lineY += 12f
-        }
-
-        ctx.drawTextRightAligned("Total Tax Amount:", rightX - 120f, lineY, ctx.textPaintRegular)
-        ctx.drawTextRightAligned(PdfFormattingUtils.formatPaiseToCurrency(doc.totalTaxAmountPaise), rightX - 8f, lineY, ctx.textPaintBold)
-        lineY += 14f
-
-        ctx.drawTextRightAligned("TOTAL AMOUNT:", rightX - 120f, lineY, ctx.textPaintHeaderLabel)
-        ctx.drawTextRightAligned(PdfFormattingUtils.formatPaiseToCurrency(doc.grandTotalPaise), rightX - 8f, lineY, ctx.textPaintTitle)
-        lineY += 16f
+        val leftX = PdfPageContext.CONTENT_LEFT
+        val rightX = PdfPageContext.CONTENT_RIGHT
+        val width = PdfPageContext.CONTENT_WIDTH
 
         val wordsText = doc.amountInWords ?: currencyFormatter.formatAmountInWords(doc.grandTotalPaise)
-        ctx.drawText("Amount Chargeable (in words):", leftX + 8f, lineY, ctx.textPaintBold)
-        lineY += 12f
-        ctx.drawText(wordsText, leftX + 8f, lineY, ctx.textPaintBold)
-        lineY += 16f
+        val wordHeight = ctx.measureWrappedTextHeight(wordsText, ctx.textPaintBold, (width - 16).toInt())
+        val totalsHeight = 110f + wordHeight
 
-        val boxHeight = lineY - startY
+        ctx.ensureSpace(totalsHeight)
+
+        val startY = ctx.currentY
+        var topY = startY + PdfPageContext.TOKEN_PADDING_MEDIUM
+
+        // Taxable Value
+        ctx.drawSingleLineRightAlignedFromTop("Taxable Amount:", rightX - 130f, topY, ctx.textPaintRegular)
+        ctx.drawSingleLineRightAlignedFromTop(PdfFormattingUtils.formatPaiseToCurrency(doc.taxableAmountPaise), rightX - 8f, topY, ctx.textPaintBold)
+        topY += 14f
+
+        if (isInterstate) {
+            ctx.drawSingleLineRightAlignedFromTop("IGST Amount:", rightX - 130f, topY, ctx.textPaintRegular)
+            ctx.drawSingleLineRightAlignedFromTop(PdfFormattingUtils.formatPaiseToCurrency(doc.igstAmountPaise), rightX - 8f, topY, ctx.textPaintRegular)
+            topY += 14f
+        } else {
+            ctx.drawSingleLineRightAlignedFromTop("CGST Amount:", rightX - 130f, topY, ctx.textPaintRegular)
+            ctx.drawSingleLineRightAlignedFromTop(PdfFormattingUtils.formatPaiseToCurrency(doc.cgstAmountPaise), rightX - 8f, topY, ctx.textPaintRegular)
+            topY += 14f
+            ctx.drawSingleLineRightAlignedFromTop("SGST Amount:", rightX - 130f, topY, ctx.textPaintRegular)
+            ctx.drawSingleLineRightAlignedFromTop(PdfFormattingUtils.formatPaiseToCurrency(doc.sgstAmountPaise), rightX - 8f, topY, ctx.textPaintRegular)
+            topY += 14f
+        }
+
+        ctx.drawSingleLineRightAlignedFromTop("Total Tax Amount:", rightX - 130f, topY, ctx.textPaintRegular)
+        ctx.drawSingleLineRightAlignedFromTop(PdfFormattingUtils.formatPaiseToCurrency(doc.totalTaxAmountPaise), rightX - 8f, topY, ctx.textPaintBold)
+        topY += 16f
+
+        // Grand Total Row with prominent visual emphasis
+        ctx.drawSingleLineRightAlignedFromTop("GRAND TOTAL:", rightX - 130f, topY, ctx.textPaintDocTitle)
+        ctx.drawSingleLineRightAlignedFromTop(PdfFormattingUtils.formatPaiseToCurrency(doc.grandTotalPaise), rightX - 8f, topY, ctx.textPaintDocTitle)
+        topY += 18f
+
+        ctx.drawSingleLineFromTop("Amount Chargeable (in words):", leftX + 8f, topY, ctx.textPaintBold)
+        topY += 14f
+        topY = ctx.drawWrappedTextFromTop(wordsText, leftX + 8f, topY, ctx.textPaintBold, (width - 16).toInt())
+        topY += PdfPageContext.TOKEN_PADDING_MEDIUM
+
+        val boxHeight = topY - startY
         ctx.canvas.drawRect(leftX, startY, rightX, startY + boxHeight, ctx.paintLine)
 
         ctx.currentY = startY + boxHeight
 
-        // 8. Tax Summary Table & Tax Amount (in words)
+        // Render HSN Tax Summary Table
         drawTaxSummaryTable(ctx, doc, isInterstate)
     }
 
+    /**
+     * HSN/SAC Tax breakdown summary table.
+     */
     private fun drawTaxSummaryTable(
         ctx: PdfPageContext,
         doc: BusinessDocument,
         isInterstate: Boolean
     ) {
-        val leftX = PdfPageContext.MARGIN_LEFT
-        val rightX = PdfPageContext.MARGIN_RIGHT
+        val leftX = PdfPageContext.CONTENT_LEFT
+        val rightX = PdfPageContext.CONTENT_RIGHT
         val tableWidth = PdfPageContext.CONTENT_WIDTH
 
-        // Group line items by HSN/SAC
         val groupedLines = doc.lineItems.groupBy { it.hsnSacSnapshot ?: "" }
         val numRows = groupedLines.size
-        val estimatedHeight = 36f + (numRows * 18f) + 30f
+        val taxWords = doc.taxAmountInWords ?: currencyFormatter.formatAmountInWords(doc.totalTaxAmountPaise)
+        val taxWordsHeight = ctx.measureWrappedTextHeight("Tax Amount (in words): $taxWords", ctx.textPaintBold, (tableWidth - 16).toInt())
+        val estimatedHeight = 18f + (numRows * 18f) + taxWordsHeight + 12f
 
         ctx.ensureSpace(estimatedHeight)
 
         val startY = ctx.currentY
         val headerHeight = 18f
-
-        // Subheader Banner
-        ctx.canvas.drawRect(leftX, startY, rightX, startY + headerHeight, ctx.paintFillHeader)
-        ctx.canvas.drawRect(leftX, startY, rightX, startY + headerHeight, ctx.paintLine)
 
         if (isInterstate) {
             val colHsn = 115f
@@ -449,11 +593,12 @@ class AndroidBusinessDocumentPdfGenerator @Inject constructor(
                 ctx.canvas.drawRect(leftX, hY, rightX, hY + headerHeight, ctx.paintFillHeader)
                 ctx.canvas.drawRect(leftX, hY, rightX, hY + headerHeight, ctx.paintLine)
 
-                ctx.drawTextCentered("HSN/SAC", xHsn + colHsn / 2f, hY + 12f, ctx.textPaintHeaderLabel)
-                ctx.drawTextRightAligned("Taxable Value", xTaxable + colTaxable - 4f, hY + 12f, ctx.textPaintHeaderLabel)
-                ctx.drawTextRightAligned("IGST Rate", xRate + colIgstRate - 4f, hY + 12f, ctx.textPaintHeaderLabel)
-                ctx.drawTextRightAligned("IGST Amt", xAmt + colIgstAmt - 4f, hY + 12f, ctx.textPaintHeaderLabel)
-                ctx.drawTextRightAligned("Total Tax", rightX - 4f, hY + 12f, ctx.textPaintHeaderLabel)
+                val topY = hY + 3f
+                ctx.drawSingleLineCenteredFromTop("HSN/SAC", xHsn + colHsn / 2f, topY, ctx.textPaintHeaderLabel)
+                ctx.drawSingleLineRightAlignedFromTop("Taxable Value", xTaxable + colTaxable - 4f, topY, ctx.textPaintHeaderLabel)
+                ctx.drawSingleLineRightAlignedFromTop("IGST Rate", xRate + colIgstRate - 4f, topY, ctx.textPaintHeaderLabel)
+                ctx.drawSingleLineRightAlignedFromTop("IGST Amt", xAmt + colIgstAmt - 4f, topY, ctx.textPaintHeaderLabel)
+                ctx.drawSingleLineRightAlignedFromTop("Total Tax", rightX - 4f, topY, ctx.textPaintHeaderLabel)
 
                 ctx.canvas.drawLine(xTaxable, hY, xTaxable, hY + headerHeight, ctx.paintLine)
                 ctx.canvas.drawLine(xRate, hY, xRate, hY + headerHeight, ctx.paintLine)
@@ -473,19 +618,19 @@ class AndroidBusinessDocumentPdfGenerator @Inject constructor(
 
                 ctx.ensureSpace(18f, onNewPageHeader = drawHeaders)
                 val rowY = ctx.currentY
-                val textY = rowY + 12f
+                val topY = rowY + 3f
 
-                ctx.drawTextCentered(hsn, xHsn + colHsn / 2f, textY, ctx.textPaintRegular)
-                ctx.drawTextRightAligned(PdfFormattingUtils.formatPaiseToCurrency(taxableSum), xTaxable + colTaxable - 4f, textY, ctx.textPaintRegular)
-                ctx.drawTextRightAligned(rateStr, xRate + colIgstRate - 4f, textY, ctx.textPaintRegular)
-                ctx.drawTextRightAligned(PdfFormattingUtils.formatPaiseToCurrency(igstSum), xAmt + colIgstAmt - 4f, textY, ctx.textPaintRegular)
-                ctx.drawTextRightAligned(PdfFormattingUtils.formatPaiseToCurrency(totalTaxSum), rightX - 4f, textY, ctx.textPaintRegular)
+                ctx.drawSingleLineCenteredFromTop(hsn, xHsn + colHsn / 2f, topY, ctx.textPaintRegular)
+                ctx.drawSingleLineRightAlignedFromTop(PdfFormattingUtils.formatPaiseToCurrency(taxableSum), xTaxable + colTaxable - 4f, topY, ctx.textPaintRegular)
+                ctx.drawSingleLineRightAlignedFromTop(rateStr, xRate + colIgstRate - 4f, topY, ctx.textPaintRegular)
+                ctx.drawSingleLineRightAlignedFromTop(PdfFormattingUtils.formatPaiseToCurrency(igstSum), xAmt + colIgstAmt - 4f, topY, ctx.textPaintRegular)
+                ctx.drawSingleLineRightAlignedFromTop(PdfFormattingUtils.formatPaiseToCurrency(totalTaxSum), rightX - 4f, topY, ctx.textPaintRegular)
 
-                ctx.canvas.drawRect(leftX, rowY, rightX, rowY + 18f, ctx.paintLine)
-                ctx.canvas.drawLine(xTaxable, rowY, xTaxable, rowY + 18f, ctx.paintLine)
-                ctx.canvas.drawLine(xRate, rowY, xRate, rowY + 18f, ctx.paintLine)
-                ctx.canvas.drawLine(xAmt, rowY, xAmt, rowY + 18f, ctx.paintLine)
-                ctx.canvas.drawLine(xTotal, rowY, xTotal, rowY + 18f, ctx.paintLine)
+                ctx.canvas.drawRect(leftX, rowY, rightX, rowY + 18f, ctx.paintThinLine)
+                ctx.canvas.drawLine(xTaxable, rowY, xTaxable, rowY + 18f, ctx.paintThinLine)
+                ctx.canvas.drawLine(xRate, rowY, xRate, rowY + 18f, ctx.paintThinLine)
+                ctx.canvas.drawLine(xAmt, rowY, xAmt, rowY + 18f, ctx.paintThinLine)
+                ctx.canvas.drawLine(xTotal, rowY, xTotal, rowY + 18f, ctx.paintThinLine)
 
                 ctx.currentY = rowY + 18f
             }
@@ -511,13 +656,14 @@ class AndroidBusinessDocumentPdfGenerator @Inject constructor(
                 ctx.canvas.drawRect(leftX, hY, rightX, hY + headerHeight, ctx.paintFillHeader)
                 ctx.canvas.drawRect(leftX, hY, rightX, hY + headerHeight, ctx.paintLine)
 
-                ctx.drawTextCentered("HSN/SAC", xHsn + colHsn / 2f, hY + 12f, ctx.textPaintHeaderLabel)
-                ctx.drawTextRightAligned("Taxable Value", xTaxable + colTaxable - 4f, hY + 12f, ctx.textPaintHeaderLabel)
-                ctx.drawTextRightAligned("CGST Rate", xCgstRate + colCgstRate - 4f, hY + 12f, ctx.textPaintHeaderLabel)
-                ctx.drawTextRightAligned("CGST Amt", xCgstAmt + colCgstAmt - 4f, hY + 12f, ctx.textPaintHeaderLabel)
-                ctx.drawTextRightAligned("SGST Rate", xSgstRate + colSgstRate - 4f, hY + 12f, ctx.textPaintHeaderLabel)
-                ctx.drawTextRightAligned("SGST Amt", xSgstAmt + colSgstAmt - 4f, hY + 12f, ctx.textPaintHeaderLabel)
-                ctx.drawTextRightAligned("Total Tax", rightX - 4f, hY + 12f, ctx.textPaintHeaderLabel)
+                val topY = hY + 3f
+                ctx.drawSingleLineCenteredFromTop("HSN/SAC", xHsn + colHsn / 2f, topY, ctx.textPaintHeaderLabel)
+                ctx.drawSingleLineRightAlignedFromTop("Taxable Value", xTaxable + colTaxable - 4f, topY, ctx.textPaintHeaderLabel)
+                ctx.drawSingleLineRightAlignedFromTop("CGST Rate", xCgstRate + colCgstRate - 4f, topY, ctx.textPaintHeaderLabel)
+                ctx.drawSingleLineRightAlignedFromTop("CGST Amt", xCgstAmt + colCgstAmt - 4f, topY, ctx.textPaintHeaderLabel)
+                ctx.drawSingleLineRightAlignedFromTop("SGST Rate", xSgstRate + colSgstRate - 4f, topY, ctx.textPaintHeaderLabel)
+                ctx.drawSingleLineRightAlignedFromTop("SGST Amt", xSgstAmt + colSgstAmt - 4f, topY, ctx.textPaintHeaderLabel)
+                ctx.drawSingleLineRightAlignedFromTop("Total Tax", rightX - 4f, topY, ctx.textPaintHeaderLabel)
 
                 ctx.canvas.drawLine(xTaxable, hY, xTaxable, hY + headerHeight, ctx.paintLine)
                 ctx.canvas.drawLine(xCgstRate, hY, xCgstRate, hY + headerHeight, ctx.paintLine)
@@ -541,81 +687,111 @@ class AndroidBusinessDocumentPdfGenerator @Inject constructor(
 
                 ctx.ensureSpace(18f, onNewPageHeader = drawHeaders)
                 val rowY = ctx.currentY
-                val textY = rowY + 12f
+                val topY = rowY + 3f
 
-                ctx.drawTextCentered(hsn, xHsn + colHsn / 2f, textY, ctx.textPaintRegular)
-                ctx.drawTextRightAligned(PdfFormattingUtils.formatPaiseToCurrency(taxableSum), xTaxable + colTaxable - 4f, textY, ctx.textPaintRegular)
-                ctx.drawTextRightAligned(rateStr, xCgstRate + colCgstRate - 4f, textY, ctx.textPaintRegular)
-                ctx.drawTextRightAligned(PdfFormattingUtils.formatPaiseToCurrency(cgstSum), xCgstAmt + colCgstAmt - 4f, textY, ctx.textPaintRegular)
-                ctx.drawTextRightAligned(rateStr, xSgstRate + colSgstRate - 4f, textY, ctx.textPaintRegular)
-                ctx.drawTextRightAligned(PdfFormattingUtils.formatPaiseToCurrency(sgstSum), xSgstAmt + colSgstAmt - 4f, textY, ctx.textPaintRegular)
-                ctx.drawTextRightAligned(PdfFormattingUtils.formatPaiseToCurrency(totalTaxSum), rightX - 4f, textY, ctx.textPaintRegular)
+                ctx.drawSingleLineCenteredFromTop(hsn, xHsn + colHsn / 2f, topY, ctx.textPaintRegular)
+                ctx.drawSingleLineRightAlignedFromTop(PdfFormattingUtils.formatPaiseToCurrency(taxableSum), xTaxable + colTaxable - 4f, topY, ctx.textPaintRegular)
+                ctx.drawSingleLineRightAlignedFromTop(rateStr, xCgstRate + colCgstRate - 4f, topY, ctx.textPaintRegular)
+                ctx.drawSingleLineRightAlignedFromTop(PdfFormattingUtils.formatPaiseToCurrency(cgstSum), xCgstAmt + colCgstAmt - 4f, topY, ctx.textPaintRegular)
+                ctx.drawSingleLineRightAlignedFromTop(rateStr, xSgstRate + colSgstRate - 4f, topY, ctx.textPaintRegular)
+                ctx.drawSingleLineRightAlignedFromTop(PdfFormattingUtils.formatPaiseToCurrency(sgstSum), xSgstAmt + colSgstAmt - 4f, topY, ctx.textPaintRegular)
+                ctx.drawSingleLineRightAlignedFromTop(PdfFormattingUtils.formatPaiseToCurrency(totalTaxSum), rightX - 4f, topY, ctx.textPaintRegular)
 
-                ctx.canvas.drawRect(leftX, rowY, rightX, rowY + 18f, ctx.paintLine)
-                ctx.canvas.drawLine(xTaxable, rowY, xTaxable, rowY + 18f, ctx.paintLine)
-                ctx.canvas.drawLine(xCgstRate, rowY, xCgstRate, rowY + 18f, ctx.paintLine)
-                ctx.canvas.drawLine(xCgstAmt, rowY, xCgstAmt, rowY + 18f, ctx.paintLine)
-                ctx.canvas.drawLine(xSgstRate, rowY, xSgstRate, rowY + 18f, ctx.paintLine)
-                ctx.canvas.drawLine(xSgstAmt, rowY, xSgstAmt, rowY + 18f, ctx.paintLine)
-                ctx.canvas.drawLine(xTotal, rowY, xTotal, rowY + 18f, ctx.paintLine)
+                ctx.canvas.drawRect(leftX, rowY, rightX, rowY + 18f, ctx.paintThinLine)
+                ctx.canvas.drawLine(xTaxable, rowY, xTaxable, rowY + 18f, ctx.paintThinLine)
+                ctx.canvas.drawLine(xCgstRate, rowY, xCgstRate, rowY + 18f, ctx.paintThinLine)
+                ctx.canvas.drawLine(xCgstAmt, rowY, xCgstAmt, rowY + 18f, ctx.paintThinLine)
+                ctx.canvas.drawLine(xSgstRate, rowY, xSgstRate, rowY + 18f, ctx.paintThinLine)
+                ctx.canvas.drawLine(xSgstAmt, rowY, xSgstAmt, rowY + 18f, ctx.paintThinLine)
+                ctx.canvas.drawLine(xTotal, rowY, xTotal, rowY + 18f, ctx.paintThinLine)
 
                 ctx.currentY = rowY + 18f
             }
         }
 
-        // Tax Amount in Words Box
-        val taxWords = doc.taxAmountInWords ?: currencyFormatter.formatAmountInWords(doc.totalTaxAmountPaise)
+        // Tax Amount in Words Box (wrapped to prevent horizontal overflow)
         val wordBoxStartY = ctx.currentY
-        val wordTextY = wordBoxStartY + 12f
+        val taxWordsText = "Tax Amount (in words): $taxWords"
+        var wordTopY = wordBoxStartY + PdfPageContext.TOKEN_PADDING_SMALL
+        wordTopY = ctx.drawWrappedTextFromTop(taxWordsText, leftX + PdfPageContext.TOKEN_PADDING_MEDIUM, wordTopY, ctx.textPaintBold, (tableWidth - 16).toInt())
+        wordTopY += PdfPageContext.TOKEN_PADDING_SMALL
 
-        ctx.drawText("Tax Amount (in words): $taxWords", leftX + 8f, wordTextY, ctx.textPaintBold)
-
-        val wordBoxHeight = 18f
+        val wordBoxHeight = maxOf(wordTopY - wordBoxStartY, 18f)
         ctx.canvas.drawRect(leftX, wordBoxStartY, rightX, wordBoxStartY + wordBoxHeight, ctx.paintLine)
         ctx.currentY = wordBoxStartY + wordBoxHeight
     }
 
+    /**
+     * Bank Details, Declaration, and Authorised Signatory block.
+     * Enforces strict multi-line text wrapping within the left column width so text never crosses the vertical divider.
+     */
     private fun drawBankAndDeclarationBlock(
         ctx: PdfPageContext,
         seller: SellerSnapshot,
         isInvoice: Boolean
     ) {
-        ctx.ensureSpace(85f)
-
-        val startY = ctx.currentY
-        val leftX = PdfPageContext.MARGIN_LEFT
-        val rightX = PdfPageContext.MARGIN_RIGHT
+        val leftX = PdfPageContext.CONTENT_LEFT
+        val rightX = PdfPageContext.CONTENT_RIGHT
         val width = PdfPageContext.CONTENT_WIDTH
         val halfWidth = width / 2f
         val midX = leftX + halfWidth
+        val leftColumnTextWidth = (halfWidth - (PdfPageContext.TOKEN_PADDING_MEDIUM * 2)).toInt()
 
-        var leftY = startY + 12f
-        ctx.drawText("BANK DETAILS", leftX + 8f, leftY, ctx.textPaintBold)
-        leftY += 12f
-        ctx.drawText("Bank Name: ${seller.bankName}", leftX + 8f, leftY, ctx.textPaintRegular)
-        leftY += 10f
-        ctx.drawText("A/c No.: ${seller.bankAccountNumber}", leftX + 8f, leftY, ctx.textPaintRegular)
-        leftY += 10f
-        ctx.drawText("Branch & IFSC: ${seller.bankBranch} (${seller.bankIfsc})", leftX + 8f, leftY, ctx.textPaintRegular)
-        leftY += 14f
+        // --- PASS 1: Measurement ---
+        var leftContentHeight = ctx.measureSingleLineHeight(ctx.textPaintBold) + PdfPageContext.TOKEN_METADATA_GAP
+        if (seller.bankName.isNotBlank()) leftContentHeight += ctx.measureWrappedTextHeight("Bank Name: ${seller.bankName}", ctx.textPaintRegular, leftColumnTextWidth) + PdfPageContext.TOKEN_METADATA_GAP
+        if (seller.bankAccountNumber.isNotBlank()) leftContentHeight += ctx.measureWrappedTextHeight("A/c No.: ${seller.bankAccountNumber}", ctx.textPaintRegular, leftColumnTextWidth) + PdfPageContext.TOKEN_METADATA_GAP
+        if (seller.bankIfsc.isNotBlank()) leftContentHeight += ctx.measureWrappedTextHeight("IFSC: ${seller.bankIfsc}", ctx.textPaintRegular, leftColumnTextWidth) + PdfPageContext.TOKEN_METADATA_GAP
+        if (seller.bankBranch.isNotBlank()) leftContentHeight += ctx.measureWrappedTextHeight("Branch: ${seller.bankBranch}", ctx.textPaintRegular, leftColumnTextWidth) + PdfPageContext.TOKEN_METADATA_GAP
 
-        ctx.drawText("DECLARATION", leftX + 8f, leftY, ctx.textPaintBold)
-        leftY += 10f
-        val decl = seller.declaration.ifBlank { "We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct." }
-        leftY += ctx.drawWrappedText(decl, leftX + 8f, leftY, ctx.textPaintSmall, (halfWidth - 16).toInt()) + 4f
+        leftContentHeight += ctx.measureSingleLineHeight(ctx.textPaintBold) + PdfPageContext.TOKEN_METADATA_GAP
+        val decl = seller.declaration.ifBlank { "We declare that this document shows the actual price of the goods described and that all particulars are true and correct." }
+        leftContentHeight += ctx.measureWrappedTextHeight(decl, ctx.textPaintSmall, leftColumnTextWidth) + PdfPageContext.TOKEN_METADATA_GAP
 
-        var rightY = startY + 12f
-        val sigHeader = seller.authorisedSignatory.ifBlank { "For VIVAAN ENTERPRISE" }
-        ctx.drawTextRightAligned(sigHeader, rightX - 8f, rightY, ctx.textPaintBold)
-        rightY += 45f // Space for physical signature/stamp
-        ctx.drawTextRightAligned("Authorised Signatory", rightX - 8f, rightY, ctx.textPaintRegular)
-        rightY += 12f
+        val sigHeader = "For ${seller.businessName}"
+        var rightContentHeight = ctx.measureSingleLineHeight(ctx.textPaintBold) + PdfPageContext.TOKEN_SIGNATURE_HEIGHT + ctx.measureSingleLineHeight(ctx.textPaintRegular)
 
-        val boxHeight = maxOf(leftY - startY + 4f, rightY - startY + 4f, 85f)
-        ctx.canvas.drawRect(leftX, startY, rightX, startY + boxHeight, ctx.paintLine)
-        ctx.canvas.drawLine(midX, startY, midX, startY + boxHeight, ctx.paintLine)
+        val totalLegalHeight = maxOf(leftContentHeight, rightContentHeight, 85f) + (PdfPageContext.TOKEN_PADDING_MEDIUM * 2)
 
-        ctx.currentY = startY + boxHeight
+        ctx.ensureSpace(totalLegalHeight)
+
+        // --- PASS 2: Drawing ---
+        val startY = ctx.currentY
+        var leftTop = startY + PdfPageContext.TOKEN_PADDING_MEDIUM
+
+        leftTop = ctx.drawSingleLineFromTop("BANK DETAILS", leftX + PdfPageContext.TOKEN_PADDING_MEDIUM, leftTop, ctx.textPaintBold)
+        leftTop += PdfPageContext.TOKEN_METADATA_GAP
+
+        if (seller.bankName.isNotBlank()) {
+            leftTop = ctx.drawWrappedTextFromTop("Bank Name: ${seller.bankName}", leftX + PdfPageContext.TOKEN_PADDING_MEDIUM, leftTop, ctx.textPaintRegular, leftColumnTextWidth)
+            leftTop += PdfPageContext.TOKEN_METADATA_GAP
+        }
+        if (seller.bankAccountNumber.isNotBlank()) {
+            leftTop = ctx.drawWrappedTextFromTop("A/c No.: ${seller.bankAccountNumber}", leftX + PdfPageContext.TOKEN_PADDING_MEDIUM, leftTop, ctx.textPaintRegular, leftColumnTextWidth)
+            leftTop += PdfPageContext.TOKEN_METADATA_GAP
+        }
+        if (seller.bankIfsc.isNotBlank()) {
+            leftTop = ctx.drawWrappedTextFromTop("IFSC: ${seller.bankIfsc}", leftX + PdfPageContext.TOKEN_PADDING_MEDIUM, leftTop, ctx.textPaintRegular, leftColumnTextWidth)
+            leftTop += PdfPageContext.TOKEN_METADATA_GAP
+        }
+        if (seller.bankBranch.isNotBlank()) {
+            leftTop = ctx.drawWrappedTextFromTop("Branch: ${seller.bankBranch}", leftX + PdfPageContext.TOKEN_PADDING_MEDIUM, leftTop, ctx.textPaintRegular, leftColumnTextWidth)
+            leftTop += PdfPageContext.TOKEN_METADATA_GAP
+        }
+
+        leftTop = ctx.drawSingleLineFromTop("DECLARATION", leftX + PdfPageContext.TOKEN_PADDING_MEDIUM, leftTop, ctx.textPaintBold)
+        leftTop += PdfPageContext.TOKEN_METADATA_GAP
+        ctx.drawWrappedTextFromTop(decl, leftX + PdfPageContext.TOKEN_PADDING_MEDIUM, leftTop, ctx.textPaintSmall, leftColumnTextWidth)
+
+        var rightTop = startY + PdfPageContext.TOKEN_PADDING_MEDIUM
+        rightTop = ctx.drawSingleLineRightAlignedFromTop(sigHeader, rightX - PdfPageContext.TOKEN_PADDING_MEDIUM, rightTop, ctx.textPaintBold)
+        rightTop += PdfPageContext.TOKEN_SIGNATURE_HEIGHT
+        ctx.drawSingleLineRightAlignedFromTop("Authorised Signatory", rightX - PdfPageContext.TOKEN_PADDING_MEDIUM, rightTop, ctx.textPaintRegular)
+
+        ctx.canvas.drawRect(leftX, startY, rightX, startY + totalLegalHeight, ctx.paintLine)
+        ctx.canvas.drawLine(midX, startY, midX, startY + totalLegalHeight, ctx.paintLine)
+
+        ctx.currentY = startY + totalLegalHeight
     }
 
     private fun drawFooter(ctx: PdfPageContext, isInvoice: Boolean) {
@@ -623,26 +799,29 @@ class AndroidBusinessDocumentPdfGenerator @Inject constructor(
         val bannerHeight = 16f
 
         ctx.canvas.drawRect(
-            PdfPageContext.MARGIN_LEFT,
+            PdfPageContext.CONTENT_LEFT,
             ctx.currentY,
-            PdfPageContext.MARGIN_RIGHT,
+            PdfPageContext.CONTENT_RIGHT,
             ctx.currentY + bannerHeight,
             ctx.paintFillHeader
         )
         ctx.canvas.drawRect(
-            PdfPageContext.MARGIN_LEFT,
+            PdfPageContext.CONTENT_LEFT,
             ctx.currentY,
-            PdfPageContext.MARGIN_RIGHT,
+            PdfPageContext.CONTENT_RIGHT,
             ctx.currentY + bannerHeight,
             ctx.paintLine
         )
 
-        ctx.drawTextCentered(
+        ctx.drawSingleLineCenteredFromTop(
             footerText,
             PdfPageContext.PAGE_WIDTH / 2f,
-            ctx.currentY + 11f,
+            ctx.currentY + 3f,
             ctx.textPaintSmall
         )
         ctx.currentY += bannerHeight
     }
 }
+
+
+

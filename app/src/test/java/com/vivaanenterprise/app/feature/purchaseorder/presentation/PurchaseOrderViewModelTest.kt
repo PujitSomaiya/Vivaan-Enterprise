@@ -6,6 +6,7 @@ import com.vivaanenterprise.app.core.common.DocumentType
 import com.vivaanenterprise.app.domain.model.BusinessDocument
 import com.vivaanenterprise.app.domain.model.BusinessProfile
 import com.vivaanenterprise.app.domain.model.Client
+import com.vivaanenterprise.app.domain.model.DocumentFinalizationInput
 import com.vivaanenterprise.app.domain.model.DocumentFinalizationResult
 import com.vivaanenterprise.app.domain.model.DocumentLineItem
 import com.vivaanenterprise.app.domain.model.DocumentValidationError
@@ -158,7 +159,7 @@ class PurchaseOrderViewModelTest {
         testScheduler.advanceUntilIdle()
 
         assertFalse(viewModel.uiState.value.showFinalizeConfirmDialog)
-        assertEquals("Please enter a delivery/factory address", viewModel.uiState.value.deliveryFactoryAddressError)
+        assertEquals("Delivery / Factory address is required", viewModel.uiState.value.deliveryFactoryAddressError)
     }
 
     @Test
@@ -263,7 +264,8 @@ class PurchaseOrderViewModelTest {
         viewModel.onIntent(PurchaseOrderUiIntent.OnConfirmFinalize)
         testScheduler.advanceUntilIdle()
 
-        assertEquals("Purchase order number is already in use.", viewModel.uiState.value.generalError)
+        assertEquals("A purchase order with this number already exists.", viewModel.uiState.value.documentNumberError)
+        assertNull(viewModel.uiState.value.generalError)
     }
 
     @Test
@@ -286,7 +288,7 @@ class PurchaseOrderViewModelTest {
 
         assertEquals(1, effects.size)
         assertTrue(effects.first() is PurchaseOrderUiEffect.NavigateSuccess)
-        assertEquals("po-doc-1", (effects.first() as PurchaseOrderUiEffect.NavigateSuccess).documentId)
+        assertEquals("po-doc-finalized-1", (effects.first() as PurchaseOrderUiEffect.NavigateSuccess).documentId)
         job.cancel()
     }
 
@@ -308,7 +310,7 @@ class PurchaseOrderViewModelTest {
         viewModel.onIntent(PurchaseOrderUiIntent.OnConfirmFinalize)
         testScheduler.advanceUntilIdle()
 
-        val savedDoc = fakeDocumentRepository.documents["po-doc-1"]
+        val savedDoc = fakeDocumentRepository.documents["po-doc-finalized-1"] ?: fakeDocumentRepository.documents["po-doc-1"]
         assertNotNull(savedDoc)
         assertEquals("Factory Address Special", savedDoc?.deliveryFactoryAddress)
         assertEquals("PO Delivery Note", savedDoc?.deliveryNote)
@@ -439,7 +441,11 @@ private class FakeDocumentRepository : DocumentRepository {
 
     var finalizeResultOverride: DocumentFinalizationResult? = null
 
+    var lastFinalizeInput: DocumentFinalizationInput? = null
+    var finalizeCalls = 0
+
     override suspend fun finalizeDocument(documentId: String, overrideDocumentNumber: String?): DocumentFinalizationResult {
+        finalizeCalls++
         finalizeResultOverride?.let { return it }
         val existing = documents[documentId] ?: return DocumentFinalizationResult.Failure(Exception("Not found"))
         val finalized = existing.copy(status = DocumentStatus.FINALIZED)
@@ -447,5 +453,30 @@ private class FakeDocumentRepository : DocumentRepository {
         return DocumentFinalizationResult.Success(finalized)
     }
 
+    override suspend fun finalizeDocument(input: DocumentFinalizationInput): DocumentFinalizationResult {
+        finalizeCalls++
+        lastFinalizeInput = input
+        finalizeResultOverride?.let { return it }
+        val docId = input.documentId ?: "po-doc-finalized-1"
+        val finalized = BusinessDocument(
+            id = docId,
+            documentType = input.documentType,
+            documentNumber = input.documentNumber,
+            documentDate = input.documentDate,
+            status = DocumentStatus.FINALIZED,
+            clientId = input.clientId,
+            lineItems = input.lineItems,
+            placeOfSupply = input.placeOfSupply,
+            deliveryFactoryAddress = input.deliveryFactoryAddress,
+            deliveryNote = input.deliveryNote,
+            destination = input.destination,
+            createdAt = System.currentTimeMillis(),
+            updatedAt = System.currentTimeMillis()
+        )
+        documents[docId] = finalized
+        return DocumentFinalizationResult.Success(finalized)
+    }
+
     override suspend fun cancelDocument(documentId: String): Result<Unit> = Result.success(Unit)
+    override suspend fun deleteDocument(documentId: String): Result<Unit> = Result.success(Unit)
 }

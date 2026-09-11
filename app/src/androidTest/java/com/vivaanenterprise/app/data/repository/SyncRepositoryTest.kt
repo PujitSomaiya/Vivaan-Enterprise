@@ -170,6 +170,61 @@ class SyncRepositoryTest {
         assertEquals(0, fakeFirestore.pushLog.size)
     }
 
+    @Test
+    fun synchronize_freshInstallRestore_pullsFinalizedDocumentAndLineItems() = runBlocking {
+        fakeFirestore.remoteDocuments.add(
+            BusinessDocumentDto(
+                id = "doc-finalized-1",
+                documentType = "TAX_INVOICE",
+                documentNumber = "VE/01/2026-27",
+                documentDate = 1000L,
+                status = "FINALIZED",
+                clientId = "client-1",
+                grandTotalPaise = 150000L,
+                createdAt = 1000L,
+                updatedAt = 1000L
+            )
+        )
+        fakeFirestore.remoteLineItems.add(
+            DocumentLineItemDto(
+                id = "item-1",
+                documentId = "doc-finalized-1",
+                position = 0,
+                descriptionSnapshot = "Item 1",
+                quantity = 10L,
+                ratePaise = 15000L,
+                createdAt = 1000L,
+                updatedAt = 1000L
+            )
+        )
+        fakeFirestore.remoteLineItems.add(
+            DocumentLineItemDto(
+                id = "item-2",
+                documentId = "doc-finalized-1",
+                position = 1,
+                descriptionSnapshot = "Item 2",
+                quantity = 5L,
+                ratePaise = 20000L,
+                createdAt = 1000L,
+                updatedAt = 1000L
+            )
+        )
+
+        val result = syncRepository.synchronize()
+        assertTrue(result.isSuccess)
+
+        val restoredDoc = db.businessDocumentDao().getById("doc-finalized-1")
+        assertTrue(restoredDoc != null)
+        assertEquals(DocumentStatus.FINALIZED, restoredDoc?.status)
+
+        val restoredLines = db.documentLineItemDao().getByDocumentId("doc-finalized-1")
+        assertEquals(2, restoredLines.size)
+        assertEquals("item-1", restoredLines[0].id)
+        assertEquals("doc-finalized-1", restoredLines[0].documentId)
+        assertEquals("item-2", restoredLines[1].id)
+        assertEquals("doc-finalized-1", restoredLines[1].documentId)
+    }
+
     // --- Helpers ---
 
     private fun createProfile(status: SyncStatus) = BusinessProfileEntity(
@@ -243,6 +298,8 @@ private class FakeFirestoreSyncDataSource : FirestoreSyncDataSource(
     val pushLog = mutableListOf<String>()
     val pushedClients = mutableListOf<ClientDto>()
     val remoteClients = mutableListOf<ClientDto>()
+    val remoteDocuments = mutableListOf<BusinessDocumentDto>()
+    val remoteLineItems = mutableListOf<DocumentLineItemDto>()
 
     var failOnPushClient = false
     var failOnPushProduct = false
@@ -271,8 +328,8 @@ private class FakeFirestoreSyncDataSource : FirestoreSyncDataSource(
         return remoteClients
     }
     override suspend fun pullProductsSince(timestamp: Long): List<ProductDto> = emptyList()
-    override suspend fun pullBusinessDocumentsSince(timestamp: Long): List<BusinessDocumentDto> = emptyList()
-    override suspend fun pullDocumentLineItemsSince(timestamp: Long): List<DocumentLineItemDto> = emptyList()
+    override suspend fun pullBusinessDocumentsSince(timestamp: Long): List<BusinessDocumentDto> = remoteDocuments
+    override suspend fun pullDocumentLineItemsSince(timestamp: Long): List<DocumentLineItemDto> = remoteLineItems
     override suspend fun pullClientAccountEntriesSince(timestamp: Long): List<ClientAccountEntryDto> = emptyList()
     override suspend fun pullDocumentSequencesSince(timestamp: Long): List<DocumentSequenceDto> = emptyList()
 }

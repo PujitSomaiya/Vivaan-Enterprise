@@ -35,6 +35,8 @@ data class ClientDto(
     val otherDetails: String? = null,
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
+    @get:com.google.firebase.firestore.PropertyName("isDeleted")
+    @field:com.google.firebase.firestore.PropertyName("isDeleted")
     val isDeleted: Boolean = false,
     val deletedAt: Long? = null
 )
@@ -44,9 +46,13 @@ data class ProductDto(
     val name: String = "",
     val hsnSac: String? = null,
     val defaultGstRateBasisPoints: Int? = null,
+    @get:com.google.firebase.firestore.PropertyName("isActive")
+    @field:com.google.firebase.firestore.PropertyName("isActive")
     val isActive: Boolean = true,
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
+    @get:com.google.firebase.firestore.PropertyName("isDeleted")
+    @field:com.google.firebase.firestore.PropertyName("isDeleted")
     val isDeleted: Boolean = false,
     val deletedAt: Long? = null
 )
@@ -119,6 +125,8 @@ data class BusinessDocumentDto(
     val updatedAt: Long = 0L,
     val finalizedAt: Long? = null,
     val cancelledAt: Long? = null,
+    @get:com.google.firebase.firestore.PropertyName("isDeleted")
+    @field:com.google.firebase.firestore.PropertyName("isDeleted")
     val isDeleted: Boolean = false,
     val deletedAt: Long? = null
 )
@@ -153,6 +161,8 @@ data class ClientAccountEntryDto(
     val narration: String? = null,
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
+    @get:com.google.firebase.firestore.PropertyName("isDeleted")
+    @field:com.google.firebase.firestore.PropertyName("isDeleted")
     val isDeleted: Boolean = false,
     val deletedAt: Long? = null
 )

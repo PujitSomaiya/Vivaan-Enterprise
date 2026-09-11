@@ -36,6 +36,10 @@
     <string name="sign_out_action">Sign Out</string>
     <string name="sign_out_dialog_title">Sign Out</string>
     <string name="sign_out_dialog_message">Are you sure you want to sign out of Vivaan Enterprise?</string>
+    <string name="press_back_again_to_exit">Press back again to exit</string>
+    <string name="developer_credit_prefix">Developed by </string>
+    <string name="developer_credit_name">Pujit Somaiya</string>
+    <string name="developer_credit_portfolio_url">https://pujitsomaiya.vercel.app/</string>
     <string name="confirm_action">Confirm</string>
     <string name="cancel_action">Cancel</string>
     <!-- Client Feature String Resources -->
@@ -58,11 +62,20 @@
     <string name="address_label">Address</string>
     <string name="gstin_label">GSTIN / UIN</string>
     <string name="state_label">State</string>
+    <string name="state_picker_label">State</string>
     <string name="state_code_label">State Code</string>
     <string name="phone_label">Phone Number</string>
     <string name="pan_label">PAN</string>
     <string name="iec_label">Import Export Code (IEC)</string>
     <string name="other_details_label">Other Details</string>
+
+    <!-- State Picker Strings -->
+    <string name="select_state_title">Select State</string>
+    <string name="select_place_of_supply_title">Select Place of Supply</string>
+    <string name="search_state_placeholder">Search state or code...</string>
+    <string name="no_state_found">No state found</string>
+    <string name="gst_state_code_label">GST State Code: %1$s</string>
+    <string name="close_desc">Close</string>
 
     <!-- Client Validation Errors -->
     <string name="error_company_name_required">Company name is required</string>
@@ -128,6 +141,11 @@
     <string name="filter_status_cancelled">Cancelled</string>
     <string name="action_edit_draft">Edit Draft</string>
     <string name="action_view_pdf">View PDF</string>
+    <string name="delete_document_action">Delete Document</string>
+    <string name="delete_draft_dialog_title">Delete Draft?</string>
+    <string name="delete_draft_dialog_message">Are you sure you want to delete this draft? It will be removed from your active documents list.</string>
+    <string name="delete_finalized_dialog_title">Delete Finalized Document?</string>
+    <string name="delete_finalized_dialog_message">Are you sure you want to delete this finalized document? It will be removed from document history and billing records across your devices.</string>
     <string name="error_document_not_found">Document not found or has been deleted</string>
 
     <!-- Client Account & Dashboard Summaries String Resources -->
@@ -141,5 +159,9 @@
     <string name="view_document_action">View Document</string>
     <string name="dashboard_finalized_invoices_label">Finalized Invoices</string>
     <string name="dashboard_total_billed_label">Total Billed</string>
+
+    <!-- PDF Viewer String Resources -->
+    <string name="action_share_pdf">Share PDF</string>
+    <string name="action_save_pdf">Save PDF to Downloads</string>
 </resources>
 

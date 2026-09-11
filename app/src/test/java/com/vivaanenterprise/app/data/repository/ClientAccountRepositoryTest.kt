@@ -169,6 +169,7 @@ private class FakeDocumentDao(
 
     override suspend fun upsert(document: BusinessDocumentEntity) {}
     override suspend fun getById(id: String): BusinessDocumentEntity? = docs[id]
+    override suspend fun getByIdIncludingDeleted(id: String): BusinessDocumentEntity? = docs[id]
     override fun observeById(id: String): Flow<BusinessDocumentEntity?> = flowOf(docs[id])
     override fun observeAllDocuments(): Flow<List<BusinessDocumentEntity>> = flowOf(docs.values.toList())
     override fun observeDocumentsByType(type: DocumentType): Flow<List<BusinessDocumentEntity>> = flowOf(docs.values.filter { it.documentType == type && !it.isDeleted })

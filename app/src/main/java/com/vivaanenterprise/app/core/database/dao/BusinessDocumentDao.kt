@@ -16,6 +16,9 @@ interface BusinessDocumentDao {
     @Query("SELECT * FROM business_documents WHERE id = :id AND isDeleted = 0")
     suspend fun getById(id: String): BusinessDocumentEntity?
 
+    @Query("SELECT * FROM business_documents WHERE id = :id LIMIT 1")
+    suspend fun getByIdIncludingDeleted(id: String): BusinessDocumentEntity?
+
     @Query("SELECT * FROM business_documents WHERE id = :id AND isDeleted = 0")
     fun observeById(id: String): Flow<BusinessDocumentEntity?>
 

@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -61,6 +62,9 @@ fun DocumentDetailRoute(
         onEditDraft = onEditDraft,
         onViewPdf = onViewPdf,
         onRetry = viewModel::onRetry,
+        onDeleteClicked = viewModel::onDeleteClicked,
+        onDeleteDismissed = viewModel::onDeleteDismissed,
+        onDeleteConfirmed = viewModel::onDeleteConfirmed,
         modifier = modifier
     )
 }
@@ -73,8 +77,56 @@ fun DocumentDetailScreen(
     onEditDraft: (DocumentType, String) -> Unit,
     onViewPdf: (String) -> Unit,
     onRetry: () -> Unit,
+    onDeleteClicked: () -> Unit = {},
+    onDeleteDismissed: () -> Unit = {},
+    onDeleteConfirmed: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    androidx.compose.runtime.LaunchedEffect(uiState.isDeletedSuccessfully) {
+        if (uiState.isDeletedSuccessfully) {
+            onNavigateBack()
+        }
+    }
+
+    if (uiState.showDeleteConfirmationDialog && uiState.document != null) {
+        val isDraft = uiState.document.status == DocumentStatus.DRAFT
+        val dialogTitle = if (isDraft) {
+            stringResource(R.string.delete_draft_dialog_title)
+        } else {
+            stringResource(R.string.delete_finalized_dialog_title)
+        }
+        val dialogMessage = if (isDraft) {
+            stringResource(R.string.delete_draft_dialog_message)
+        } else {
+            stringResource(R.string.delete_finalized_dialog_message)
+        }
+
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { if (!uiState.isDeleting) onDeleteDismissed() },
+            title = { Text(text = dialogTitle) },
+            text = { Text(text = dialogMessage) },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = onDeleteConfirmed,
+                    enabled = !uiState.isDeleting
+                ) {
+                    Text(
+                        text = stringResource(R.string.delete_action),
+                        color = AppTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = onDeleteDismissed,
+                    enabled = !uiState.isDeleting
+                ) {
+                    Text(text = stringResource(R.string.cancel_action))
+                }
+            }
+        )
+    }
+
     AppScaffold(
         modifier = modifier,
         topBar = {
@@ -86,6 +138,20 @@ fun DocumentDetailScreen(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.nav_back_desc)
                         )
+                    }
+                },
+                actions = {
+                    if (uiState.document != null) {
+                        IconButton(
+                            onClick = onDeleteClicked,
+                            enabled = !uiState.isDeleting
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = stringResource(R.string.delete_document_action),
+                                tint = AppTheme.colorScheme.error
+                            )
+                        }
                     }
                 }
             )
@@ -143,7 +209,9 @@ fun DocumentDetailScreen(
                     BottomActionBar(
                         doc = doc,
                         onEditDraft = { onEditDraft(doc.documentType, doc.id) },
-                        onViewPdf = { onViewPdf(doc.id) }
+                        onViewPdf = { onViewPdf(doc.id) },
+                        onDeleteClicked = onDeleteClicked,
+                        isDeleting = uiState.isDeleting
                     )
                 }
             }
@@ -594,7 +662,9 @@ private fun MetadataDetailsCard(doc: BusinessDocument) {
 private fun BottomActionBar(
     doc: BusinessDocument,
     onEditDraft: () -> Unit,
-    onViewPdf: () -> Unit
+    onViewPdf: () -> Unit,
+    onDeleteClicked: () -> Unit = {},
+    isDeleting: Boolean = false
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
