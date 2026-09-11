@@ -1,4 +1,4 @@
-package com.vivaanenterprise.app.feature.invoice.presentation.components
+package com.vivaanenterprise.app.feature.document.presentation.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -30,24 +30,25 @@ import androidx.compose.ui.Modifier
 import com.vivaanenterprise.app.core.designsystem.component.AppCard
 import com.vivaanenterprise.app.core.designsystem.component.AppSearchField
 import com.vivaanenterprise.app.core.designsystem.theme.AppTheme
-import com.vivaanenterprise.app.domain.model.IndianState
+import com.vivaanenterprise.app.domain.model.Client
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlaceOfSupplyBottomSheet(
-    selectedStateCode: String,
-    onSelectState: (IndianState) -> Unit,
+fun ClientSelectorBottomSheet(
+    clients: List<Client>,
+    selectedClient: Client?,
+    onSelectClient: (Client) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var searchQuery by remember { mutableStateOf("") }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    val states = remember { IndianState.ALL_STATES }
-    val filteredStates = remember(states, searchQuery) {
-        if (searchQuery.isBlank()) states
-        else states.filter {
-            it.name.contains(searchQuery, ignoreCase = true) || it.code.contains(searchQuery)
+    val filteredClients = remember(clients, searchQuery) {
+        if (searchQuery.isBlank()) clients
+        else clients.filter {
+            it.companyName.contains(searchQuery, ignoreCase = true) ||
+                    (it.gstin?.contains(searchQuery, ignoreCase = true) == true)
         }
     }
 
@@ -67,7 +68,7 @@ fun PlaceOfSupplyBottomSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Select Place of Supply",
+                    text = "Select Client",
                     style = AppTheme.typography.titleMedium,
                     color = AppTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
@@ -82,13 +83,13 @@ fun PlaceOfSupplyBottomSheet(
             AppSearchField(
                 query = searchQuery,
                 onQueryChange = { searchQuery = it },
-                placeholder = "Search state or code...",
+                placeholder = "Search client by name or GSTIN...",
                 modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(AppTheme.spacing.md))
 
-            if (filteredStates.isEmpty()) {
+            if (filteredClients.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -96,7 +97,7 @@ fun PlaceOfSupplyBottomSheet(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No state found",
+                        text = "No clients found",
                         style = AppTheme.typography.bodyMedium,
                         color = AppTheme.colorScheme.onSurfaceVariant
                     )
@@ -106,16 +107,16 @@ fun PlaceOfSupplyBottomSheet(
                     modifier = Modifier.weight(1f)
                 ) {
                     items(
-                        items = filteredStates,
-                        key = { it.code }
-                    ) { stateItem ->
-                        val isSelected = stateItem.code == selectedStateCode
+                        items = filteredClients,
+                        key = { it.id }
+                    ) { client ->
+                        val isSelected = client.id == selectedClient?.id
                         AppCard(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = AppTheme.spacing.xs)
                                 .clickable {
-                                    onSelectState(stateItem)
+                                    onSelectClient(client)
                                     onDismiss()
                                 }
                         ) {
@@ -128,7 +129,7 @@ fun PlaceOfSupplyBottomSheet(
                                 RadioButton(
                                     selected = isSelected,
                                     onClick = {
-                                        onSelectState(stateItem)
+                                        onSelectClient(client)
                                         onDismiss()
                                     }
                                 )
@@ -138,15 +139,25 @@ fun PlaceOfSupplyBottomSheet(
                                         .padding(start = AppTheme.spacing.xs)
                                 ) {
                                     Text(
-                                        text = stateItem.name,
+                                        text = client.companyName,
                                         style = AppTheme.typography.titleMedium,
                                         color = AppTheme.colorScheme.onSurface
                                     )
-                                    Text(
-                                        text = "GST State Code: ${stateItem.code}",
-                                        style = AppTheme.typography.bodySmall,
-                                        color = AppTheme.colorScheme.onSurfaceVariant
-                                    )
+                                    if (!client.gstin.isNullOrBlank()) {
+                                        Text(
+                                            text = "GSTIN: ${client.gstin}",
+                                            style = AppTheme.typography.bodySmall,
+                                            color = AppTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    val location = listOfNotNull(client.state, client.stateCode).joinToString(" — ")
+                                    if (location.isNotBlank()) {
+                                        Text(
+                                            text = "State: $location",
+                                            style = AppTheme.typography.bodySmall,
+                                            color = AppTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
                             }
                         }

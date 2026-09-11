@@ -50,6 +50,7 @@ import com.vivaanenterprise.app.domain.model.Client
 fun ClientDetailRoute(
     onNavigateBack: () -> Unit,
     onNavigateToEdit: (String) -> Unit,
+    onNavigateToAccount: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ClientDetailViewModel = hiltViewModel()
 ) {
@@ -73,6 +74,7 @@ fun ClientDetailRoute(
         uiState = uiState,
         onIntent = viewModel::onIntent,
         onNavigateBack = onNavigateBack,
+        onNavigateToAccount = onNavigateToAccount,
         snackbarHostState = snackbarHostState,
         modifier = modifier
     )
@@ -84,6 +86,7 @@ fun ClientDetailScreen(
     uiState: ClientDetailUiState,
     onIntent: (ClientDetailUiIntent) -> Unit,
     onNavigateBack: () -> Unit,
+    onNavigateToAccount: (String) -> Unit = {},
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
 ) {
@@ -241,6 +244,14 @@ fun ClientDetailScreen(
                             modifier = Modifier.weight(1f)
                         )
                     }
+
+                    Spacer(modifier = Modifier.height(AppTheme.spacing.md))
+
+                    AppSecondaryButton(
+                        text = stringResource(R.string.client_account_action),
+                        onClick = { onNavigateToAccount(client.id) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
         }

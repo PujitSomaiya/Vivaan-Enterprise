@@ -24,6 +24,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.vivaanenterprise.app.domain.model.IndianState
+import com.vivaanenterprise.app.feature.document.presentation.components.IndianStatePickerBottomSheet
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -83,8 +88,17 @@ fun ClientFormScreen(
     modifier: Modifier = Modifier
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
+    var showStatePicker by remember { mutableStateOf(false) }
 
     val titleRes = if (uiState.isEditMode) R.string.edit_client_title else R.string.add_client_title
+
+    if (showStatePicker) {
+        IndianStatePickerBottomSheet(
+            selectedStateCode = uiState.stateCode,
+            onSelectState = { onIntent(ClientFormUiIntent.StateSelected(it.code)) },
+            onDismiss = { showStatePicker = false }
+        )
+    }
 
     AppScaffold(
         modifier = modifier,
@@ -164,29 +178,22 @@ fun ClientFormScreen(
 
                         Spacer(modifier = Modifier.height(AppTheme.spacing.md))
 
-                        AppTextField(
-                            value = uiState.state,
-                            onValueChange = { onIntent(ClientFormUiIntent.StateChanged(it)) },
-                            label = stringResource(R.string.state_label),
-                            enabled = !uiState.isSaving,
-                            keyboardOptions = KeyboardOptions(
-                                capitalization = KeyboardCapitalization.Words,
-                                imeAction = ImeAction.Next
-                            )
-                        )
-
-                        Spacer(modifier = Modifier.height(AppTheme.spacing.md))
+                        val selectedIndianState = IndianState.findByCode(uiState.stateCode)
+                        val stateDisplayValue = selectedIndianState?.displayName ?: if (uiState.state.isNotBlank()) "${uiState.state} (${uiState.stateCode})" else ""
 
                         AppTextField(
-                            value = uiState.stateCode,
-                            onValueChange = { onIntent(ClientFormUiIntent.StateCodeChanged(it)) },
-                            label = stringResource(R.string.state_code_label),
+                            value = stateDisplayValue,
+                            onValueChange = {},
+                            label = stringResource(R.string.state_picker_label),
                             errorText = uiState.stateCodeError?.let { stringResource(R.string.error_state_code_invalid) },
                             enabled = !uiState.isSaving,
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Number,
-                                imeAction = ImeAction.Next
-                            )
+                            onClick = { showStatePicker = true },
+                            trailingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = stringResource(R.string.select_state_title)
+                                )
+                            }
                         )
 
                         Spacer(modifier = Modifier.height(AppTheme.spacing.md))

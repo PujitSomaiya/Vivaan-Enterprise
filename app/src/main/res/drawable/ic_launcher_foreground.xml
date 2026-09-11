@@ -4,29 +4,47 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Background grid/canvas fill -->
-    <path
-        android:fillColor="#334E68"
-        android:pathData="M0,0h108v108h-108z"/>
-    <!-- Outer Document Frame -->
+
+    <!-- 'V' Monogram -->
     <path
         android:fillColor="#00000000"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="4"
-        android:pathData="M34,26h40a6,6 0,0 1,6 6v44a6,6 0,0 1,-6 6h-40a6,6 0,0 1,-6 -6v-44a6,6 0,0 1,6 -6z"/>
-    <!-- "V" Monogram -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="5"
+        android:strokeWidth="7"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:pathData="M41,38 L54,62 L67,38"/>
-    <!-- Accent Line ("E" Bar) -->
+        android:pathData="M27,39 L43,69 L59,39"/>
+
+    <!-- 'E' Monogram -->
+    <!-- E Spine -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:pathData="M65,39 L65,69"/>
+
+    <!-- E Top Bar -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:pathData="M65,39 L81,39"/>
+
+    <!-- E Middle Bar (Accent Color) -->
     <path
         android:fillColor="#00000000"
         android:strokeColor="#9FB3C8"
-        android:strokeWidth="4"
+        android:strokeWidth="6"
         android:strokeLineCap="round"
-        android:pathData="M43,68 L65,68"/>
+        android:pathData="M65,54 L78,54"/>
+
+    <!-- E Bottom Bar -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:pathData="M65,69 L81,69"/>
 </vector>
+

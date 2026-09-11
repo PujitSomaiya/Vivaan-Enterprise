@@ -22,6 +22,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.vivaanenterprise.app.R
 import com.vivaanenterprise.app.core.designsystem.theme.AppTheme
+import com.vivaanenterprise.app.core.designsystem.theme.*
 
 @Composable
 fun AppLoadingState(
@@ -155,3 +156,80 @@ fun AppErrorState(
         }
     }
 }
+
+@Composable
+fun AppSyncIndicator(
+    status: com.vivaanenterprise.app.core.common.SyncStatus,
+    modifier: Modifier = Modifier
+) {
+    val bgColor = when (status) {
+        com.vivaanenterprise.app.core.common.SyncStatus.SYNCED -> LightSuccessContainer
+        com.vivaanenterprise.app.core.common.SyncStatus.PENDING -> LightWarningContainer
+        com.vivaanenterprise.app.core.common.SyncStatus.FAILED -> LightErrorContainer
+    }
+    val textColor = when (status) {
+        com.vivaanenterprise.app.core.common.SyncStatus.SYNCED -> LightOnSuccessContainer
+        com.vivaanenterprise.app.core.common.SyncStatus.PENDING -> LightOnWarningContainer
+        com.vivaanenterprise.app.core.common.SyncStatus.FAILED -> LightOnErrorContainer
+    }
+    val text = when (status) {
+        com.vivaanenterprise.app.core.common.SyncStatus.SYNCED -> "SYNCED"
+        com.vivaanenterprise.app.core.common.SyncStatus.PENDING -> "PENDING"
+        com.vivaanenterprise.app.core.common.SyncStatus.FAILED -> "FAILED"
+    }
+
+    androidx.compose.material3.Surface(
+        color = bgColor,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp),
+        modifier = modifier
+    ) {
+        androidx.compose.foundation.layout.Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+        ) {
+            Text(
+                text = text,
+                style = AppTheme.typography.labelSmall,
+                color = textColor,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
+fun AppErrorDialog(
+    message: String,
+    onDismiss: () -> Unit,
+    title: String = "Unable to complete action",
+    confirmText: String = stringResource(id = R.string.confirm_action),
+    modifier: Modifier = Modifier
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = title,
+                style = AppTheme.typography.titleMedium,
+                color = AppTheme.colorScheme.onSurface
+            )
+        },
+        text = {
+            Text(
+                text = message,
+                style = AppTheme.typography.bodyMedium,
+                color = AppTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) {
+                Text(text = confirmText)
+            }
+        },
+        containerColor = AppTheme.colorScheme.surface,
+        shape = AppTheme.shapes.large,
+        modifier = modifier
+    )
+}
+

@@ -25,6 +25,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Row
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vivaanenterprise.app.R
 import com.vivaanenterprise.app.core.designsystem.component.AppCard
 import com.vivaanenterprise.app.core.designsystem.component.AppScaffold
@@ -39,14 +44,20 @@ fun DashboardRoute(
     onNavigateToProducts: () -> Unit,
     onNavigateToNewInvoice: () -> Unit,
     onNavigateToNewPurchaseOrder: () -> Unit,
-    modifier: Modifier = Modifier
+    onNavigateToDocuments: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: DashboardViewModel = hiltViewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     DashboardScreen(
+        uiState = uiState,
         onSignOutClick = onSignOutClick,
         onNavigateToClients = onNavigateToClients,
         onNavigateToProducts = onNavigateToProducts,
         onNavigateToNewInvoice = onNavigateToNewInvoice,
         onNavigateToNewPurchaseOrder = onNavigateToNewPurchaseOrder,
+        onNavigateToDocuments = onNavigateToDocuments,
         modifier = modifier
     )
 }
@@ -54,14 +65,23 @@ fun DashboardRoute(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
+    uiState: DashboardUiState = DashboardUiState(),
     onSignOutClick: () -> Unit,
     onNavigateToClients: () -> Unit,
     onNavigateToProducts: () -> Unit,
     onNavigateToNewInvoice: () -> Unit = {},
     onNavigateToNewPurchaseOrder: () -> Unit = {},
+    onNavigateToDocuments: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showSignOutDialog by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+
+    // Double-back exit handler on Dashboard (disabled if sign-out dialog is showing so back dismisses dialog first)
+    com.vivaanenterprise.app.core.common.util.DoubleBackToExitHandler(
+        snackbarHostState = snackbarHostState,
+        enabled = !showSignOutDialog
+    )
 
     if (showSignOutDialog) {
         AlertDialog(
@@ -90,85 +110,159 @@ fun DashboardScreen(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text(text = stringResource(R.string.app_name)) },
+                title = { Text(text = stringResource(R.string.app_name), style = AppTheme.typography.titleLarge) },
                 actions = {
                     IconButton(onClick = { showSignOutDialog = true }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                            contentDescription = stringResource(R.string.sign_out_action)
+                            contentDescription = stringResource(R.string.sign_out_action),
+                            tint = AppTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
             )
-        }
+        },
+        snackbarHostState = snackbarHostState
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
                 .padding(AppTheme.spacing.md),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.md)
         ) {
-            AppCard(
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            // Hero Brand & Welcome Card
+            AppCard(modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(AppTheme.spacing.lg),
+                        .padding(AppTheme.spacing.md),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     VeLogo(size = AppTheme.sizing.logoMedium)
-
-                    Spacer(modifier = Modifier.height(AppTheme.spacing.md))
-
+                    Spacer(modifier = Modifier.height(AppTheme.spacing.sm))
                     Text(
                         text = stringResource(R.string.dashboard_welcome),
                         style = AppTheme.typography.headlineSmall,
-                        color = AppTheme.colorScheme.primary
+                        color = AppTheme.colorScheme.primary,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                     )
-
-                    Spacer(modifier = Modifier.height(AppTheme.spacing.xs))
-
+                    Spacer(modifier = Modifier.height(AppTheme.spacing.xxs))
                     Text(
                         text = stringResource(R.string.dashboard_subtitle),
                         style = AppTheme.typography.bodyMedium,
                         color = AppTheme.colorScheme.onSurfaceVariant
                     )
-
-                    Spacer(modifier = Modifier.height(AppTheme.spacing.lg))
-
-                    com.vivaanenterprise.app.core.designsystem.component.AppPrimaryButton(
-                        text = "New Tax Invoice",
-                        onClick = onNavigateToNewInvoice,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Spacer(modifier = Modifier.height(AppTheme.spacing.md))
-
-                    com.vivaanenterprise.app.core.designsystem.component.AppPrimaryButton(
-                        text = "New Purchase Order",
-                        onClick = onNavigateToNewPurchaseOrder,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Spacer(modifier = Modifier.height(AppTheme.spacing.md))
-
-                    com.vivaanenterprise.app.core.designsystem.component.AppSecondaryButton(
-                        text = stringResource(R.string.clients_title),
-                        onClick = onNavigateToClients,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Spacer(modifier = Modifier.height(AppTheme.spacing.md))
-
-                    com.vivaanenterprise.app.core.designsystem.component.AppSecondaryButton(
-                        text = stringResource(R.string.products_title),
-                        onClick = onNavigateToProducts,
-                        modifier = Modifier.fillMaxWidth()
-                    )
                 }
+            }
+
+            // Restrained KPI Summary Section
+            DashboardSummarySection(
+                finalizedInvoiceCount = uiState.summary.finalizedInvoiceCount,
+                totalBilledPaise = uiState.summary.totalBilledPaise
+            )
+
+            // Primary Actions Section
+            Text(
+                text = "Quick Actions",
+                style = AppTheme.typography.titleMedium,
+                color = AppTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(start = AppTheme.spacing.xs, top = AppTheme.spacing.xs)
+            )
+
+            com.vivaanenterprise.app.core.designsystem.component.AppPrimaryButton(
+                text = "New Tax Invoice",
+                onClick = onNavigateToNewInvoice,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            com.vivaanenterprise.app.core.designsystem.component.AppPrimaryButton(
+                text = "New Purchase Order",
+                onClick = onNavigateToNewPurchaseOrder,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            com.vivaanenterprise.app.core.designsystem.component.AppSecondaryButton(
+                text = stringResource(R.string.documents_title),
+                onClick = onNavigateToDocuments,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)
+            ) {
+                com.vivaanenterprise.app.core.designsystem.component.AppSecondaryButton(
+                    text = stringResource(R.string.clients_title),
+                    onClick = onNavigateToClients,
+                    modifier = Modifier.weight(1f)
+                )
+
+                com.vivaanenterprise.app.core.designsystem.component.AppSecondaryButton(
+                    text = stringResource(R.string.products_title),
+                    onClick = onNavigateToProducts,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(AppTheme.spacing.xs))
+
+            com.vivaanenterprise.app.core.designsystem.component.DeveloperCredit()
+        }
+    }
+}
+
+@Composable
+private fun DashboardSummarySection(
+    finalizedInvoiceCount: Int,
+    totalBilledPaise: Long
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.md)
+    ) {
+        AppCard(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(AppTheme.spacing.md),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = stringResource(R.string.dashboard_finalized_invoices_label),
+                    style = AppTheme.typography.labelMedium,
+                    color = AppTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(AppTheme.spacing.xs))
+                Text(
+                    text = finalizedInvoiceCount.toString(),
+                    style = AppTheme.typography.titleLarge,
+                    color = AppTheme.colorScheme.onSurface,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                )
+            }
+        }
+
+        AppCard(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(AppTheme.spacing.md),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = stringResource(R.string.dashboard_total_billed_label),
+                    style = AppTheme.typography.labelMedium,
+                    color = AppTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(AppTheme.spacing.xs))
+                Text(
+                    text = "₹ ${com.vivaanenterprise.app.core.pdf.PdfFormattingUtils.formatPaiseToCurrency(totalBilledPaise)}",
+                    style = AppTheme.typography.titleLarge,
+                    color = AppTheme.colorScheme.primary,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                )
             }
         }
     }

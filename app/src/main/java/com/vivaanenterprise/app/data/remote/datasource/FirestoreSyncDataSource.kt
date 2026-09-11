@@ -15,54 +15,54 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class FirestoreSyncDataSource @Inject constructor(
+open class FirestoreSyncDataSource @Inject constructor(
     private val firestore: FirebaseFirestore
 ) {
 
     // Push methods
-    suspend fun pushBusinessProfile(dto: BusinessProfileDto) {
+    open suspend fun pushBusinessProfile(dto: BusinessProfileDto) {
         firestore.collection(FirestoreCollections.BUSINESS_PROFILES)
             .document(dto.id)
             .set(dto, SetOptions.merge())
             .await()
     }
 
-    suspend fun pushClient(dto: ClientDto) {
+    open suspend fun pushClient(dto: ClientDto) {
         firestore.collection(FirestoreCollections.CLIENTS)
             .document(dto.id)
             .set(dto, SetOptions.merge())
             .await()
     }
 
-    suspend fun pushProduct(dto: ProductDto) {
+    open suspend fun pushProduct(dto: ProductDto) {
         firestore.collection(FirestoreCollections.PRODUCTS)
             .document(dto.id)
             .set(dto, SetOptions.merge())
             .await()
     }
 
-    suspend fun pushBusinessDocument(dto: BusinessDocumentDto) {
+    open suspend fun pushBusinessDocument(dto: BusinessDocumentDto) {
         firestore.collection(FirestoreCollections.DOCUMENTS)
             .document(dto.id)
             .set(dto, SetOptions.merge())
             .await()
     }
 
-    suspend fun pushDocumentLineItem(dto: DocumentLineItemDto) {
+    open suspend fun pushDocumentLineItem(dto: DocumentLineItemDto) {
         firestore.collection(FirestoreCollections.DOCUMENT_LINE_ITEMS)
             .document(dto.id)
             .set(dto, SetOptions.merge())
             .await()
     }
 
-    suspend fun pushClientAccountEntry(dto: ClientAccountEntryDto) {
+    open suspend fun pushClientAccountEntry(dto: ClientAccountEntryDto) {
         firestore.collection(FirestoreCollections.CLIENT_ACCOUNT_ENTRIES)
             .document(dto.id)
             .set(dto, SetOptions.merge())
             .await()
     }
 
-    suspend fun pushDocumentSequence(dto: DocumentSequenceDto) {
+    open suspend fun pushDocumentSequence(dto: DocumentSequenceDto) {
         val compositeId = "${dto.documentType}_${dto.financialYear}"
         firestore.collection(FirestoreCollections.DOCUMENT_SEQUENCES)
             .document(compositeId)
@@ -71,7 +71,7 @@ class FirestoreSyncDataSource @Inject constructor(
     }
 
     // Pull methods
-    suspend fun pullBusinessProfilesSince(sinceTimestamp: Long): List<BusinessProfileDto> {
+    open suspend fun pullBusinessProfilesSince(sinceTimestamp: Long): List<BusinessProfileDto> {
         return firestore.collection(FirestoreCollections.BUSINESS_PROFILES)
             .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
             .get()
@@ -79,7 +79,7 @@ class FirestoreSyncDataSource @Inject constructor(
             .toObjects(BusinessProfileDto::class.java)
     }
 
-    suspend fun pullClientsSince(sinceTimestamp: Long): List<ClientDto> {
+    open suspend fun pullClientsSince(sinceTimestamp: Long): List<ClientDto> {
         return firestore.collection(FirestoreCollections.CLIENTS)
             .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
             .get()
@@ -87,7 +87,7 @@ class FirestoreSyncDataSource @Inject constructor(
             .toObjects(ClientDto::class.java)
     }
 
-    suspend fun pullProductsSince(sinceTimestamp: Long): List<ProductDto> {
+    open suspend fun pullProductsSince(sinceTimestamp: Long): List<ProductDto> {
         return firestore.collection(FirestoreCollections.PRODUCTS)
             .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
             .get()
@@ -95,7 +95,7 @@ class FirestoreSyncDataSource @Inject constructor(
             .toObjects(ProductDto::class.java)
     }
 
-    suspend fun pullBusinessDocumentsSince(sinceTimestamp: Long): List<BusinessDocumentDto> {
+    open suspend fun pullBusinessDocumentsSince(sinceTimestamp: Long): List<BusinessDocumentDto> {
         return firestore.collection(FirestoreCollections.DOCUMENTS)
             .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
             .get()
@@ -103,7 +103,7 @@ class FirestoreSyncDataSource @Inject constructor(
             .toObjects(BusinessDocumentDto::class.java)
     }
 
-    suspend fun pullDocumentLineItemsSince(sinceTimestamp: Long): List<DocumentLineItemDto> {
+    open suspend fun pullDocumentLineItemsSince(sinceTimestamp: Long): List<DocumentLineItemDto> {
         return firestore.collection(FirestoreCollections.DOCUMENT_LINE_ITEMS)
             .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
             .get()
@@ -111,7 +111,7 @@ class FirestoreSyncDataSource @Inject constructor(
             .toObjects(DocumentLineItemDto::class.java)
     }
 
-    suspend fun pullClientAccountEntriesSince(sinceTimestamp: Long): List<ClientAccountEntryDto> {
+    open suspend fun pullClientAccountEntriesSince(sinceTimestamp: Long): List<ClientAccountEntryDto> {
         return firestore.collection(FirestoreCollections.CLIENT_ACCOUNT_ENTRIES)
             .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
             .get()
@@ -119,7 +119,7 @@ class FirestoreSyncDataSource @Inject constructor(
             .toObjects(ClientAccountEntryDto::class.java)
     }
 
-    suspend fun pullDocumentSequencesSince(sinceTimestamp: Long): List<DocumentSequenceDto> {
+    open suspend fun pullDocumentSequencesSince(sinceTimestamp: Long): List<DocumentSequenceDto> {
         return firestore.collection(FirestoreCollections.DOCUMENT_SEQUENCES)
             .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
             .get()
@@ -127,3 +127,4 @@ class FirestoreSyncDataSource @Inject constructor(
             .toObjects(DocumentSequenceDto::class.java)
     }
 }
+

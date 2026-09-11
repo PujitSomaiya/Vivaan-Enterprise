@@ -77,7 +77,7 @@ class PdfServicesTest {
     fun setUp() {
         context = InstrumentationRegistry.getInstrumentation().targetContext
         sanitizer = PdfFilenameSanitizer()
-        cacheManager = PdfCacheManager(context)
+        cacheManager = PdfCacheManager(context, sanitizer)
         shareManager = PdfShareManager(context, sanitizer)
         exportManager = PdfExportManager(context, sanitizer)
     }
@@ -85,13 +85,13 @@ class PdfServicesTest {
     @Test
     fun testFilenameSanitizer_sanitizesDocumentNumber() {
         val filename = sanitizer.formatUserFacingFilename(sampleDoc)
-        assertEquals("Tax-Invoice_VE-06-2026-27.pdf", filename)
+        assertEquals("Tax_Invoice_VE_06_2026_27_Acme.pdf", filename)
 
         val poDoc = sampleDoc.copy(documentType = DocumentType.PURCHASE_ORDER, documentNumber = "PO/123/2026-27")
-        assertEquals("Purchase-Order_PO-123-2026-27.pdf", sanitizer.formatUserFacingFilename(poDoc))
+        assertEquals("Purchase_Order_PO_123_2026_27_Acme.pdf", sanitizer.formatUserFacingFilename(poDoc))
 
         val dirtyNum = "  ABC / 125 : test? * < > |  "
-        assertEquals("ABC-125-test", sanitizer.sanitizeFilename(dirtyNum))
+        assertEquals("ABC_125_test", sanitizer.sanitizeFilename(dirtyNum))
     }
 
     @Test
@@ -101,7 +101,7 @@ class PdfServicesTest {
 
         assertTrue(file.exists())
         assertTrue(file.length() > 0)
-        assertEquals("pdf_doc-12345.pdf", file.name)
+        assertEquals("pdf_doc_12345.pdf", file.name)
 
         val retrieved = cacheManager.getCachedPdf("doc-12345")
         assertNotNull(retrieved)
@@ -120,6 +120,8 @@ class PdfServicesTest {
         assertNotNull(uri)
         assertEquals("content", uri?.scheme)
         assertTrue(uri.toString().contains("fileprovider"))
+        val expectedFilename = sanitizer.formatUserFacingFilename(sampleDoc)
+        assertTrue("Share URI path should contain user-facing filename: $expectedFilename, got: $uri", uri.toString().contains(expectedFilename))
     }
 
     @Test
@@ -167,7 +169,7 @@ class PdfServicesTest {
                 val displayName = cursor.getString(0)
                 val mimeType = cursor.getString(1)
                 assertEquals("application/pdf", mimeType)
-                assertTrue(displayName.startsWith("Tax-Invoice_VE-06-2026-27"))
+                assertTrue(displayName.startsWith("Tax_Invoice_VE_06_2026_27"))
             }
 
             // Cleanup test row from MediaStore so user's Downloads directory stays clean

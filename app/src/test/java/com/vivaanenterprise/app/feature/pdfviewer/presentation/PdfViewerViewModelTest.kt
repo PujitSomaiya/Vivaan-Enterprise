@@ -216,6 +216,23 @@ class PdfViewerViewModelTest {
         assertEquals("Document not found", state.errorMessage)
     }
 
+    @Test
+    fun testOnSaveClick_doesNotMutateDocumentStatusOrInvokeRepositoryFinalization() = runTest {
+        fakeGenerateUseCase.doc = sampleDoc
+        fakeGenerateUseCase.pdfResult = PdfGenerationResult.Success("PDF_BYTES".toByteArray())
+
+        val viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onIntent(PdfViewerUiIntent.OnSaveClick)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Document status remains unchanged as FINALIZED
+        assertEquals(DocumentStatus.FINALIZED, sampleDoc.status)
+        // Verify no repository finalization calls were triggered by Save/Download PDF
+        assertEquals(0, fakeGenerateUseCase.finalizeCalls)
+    }
+
     private class TestablePdfViewerViewModel(
         generatePdfUseCase: GenerateBusinessDocumentPdfUseCase,
         cacheManager: PdfCacheManager,
@@ -257,6 +274,7 @@ class PdfViewerViewModelTest {
 
     private class FakeGenerateBusinessDocumentPdfUseCase : GenerateBusinessDocumentPdfUseCase(
         documentRepository = object : com.vivaanenterprise.app.domain.repository.DocumentRepository {
+            override fun observeAllDocuments() = TODO()
             override fun observeDocumentById(id: String) = TODO()
             override fun observeDocumentsByType(type: DocumentType) = TODO()
             override fun observeDocumentsByClient(clientId: String) = TODO()
@@ -266,7 +284,9 @@ class PdfViewerViewModelTest {
             override suspend fun createDraft(type: DocumentType, clientId: String, documentDate: Long, documentNumber: String?, lineItems: List<DocumentLineItem>, placeOfSupply: String?, deliveryFactoryAddress: String?, paymentTerms: String?, deliveryNote: String?, supplierReference: String?, otherReferences: String?, buyerOrderNumber: String?, buyerOrderDate: Long?, dispatchDocumentNumber: String?, deliveryNoteDate: Long?, dispatchThrough: String?, destination: String?, termsOfDelivery: String?) = TODO()
             override suspend fun updateDraft(document: BusinessDocument, lineItems: List<DocumentLineItem>) = TODO()
             override suspend fun finalizeDocument(documentId: String, overrideDocumentNumber: String?) = TODO()
+            override suspend fun finalizeDocument(input: com.vivaanenterprise.app.domain.model.DocumentFinalizationInput) = TODO()
             override suspend fun cancelDocument(documentId: String) = TODO()
+            override suspend fun deleteDocument(documentId: String) = TODO()
         },
         pdfGenerator = object : com.vivaanenterprise.app.domain.pdf.BusinessDocumentPdfGenerator {
             override suspend fun generatePdf(document: BusinessDocument) = PdfGenerationResult.Failure.NoLineItems
@@ -274,6 +294,7 @@ class PdfViewerViewModelTest {
     ) {
         var doc: BusinessDocument? = null
         var pdfResult: PdfGenerationResult = PdfGenerationResult.Success("PDF_BYTES".toByteArray())
+        var finalizeCalls = 0
 
         override suspend fun getDocument(documentId: String): BusinessDocument? {
             return doc
@@ -289,7 +310,7 @@ class PdfViewerViewModelTest {
         override fun getPackageName(): String = "com.vivaanenterprise.app"
     }
 
-    private class FakePdfCacheManager : PdfCacheManager(context = TestContext()) {
+    private class FakePdfCacheManager : PdfCacheManager(context = TestContext(), sanitizer = PdfFilenameSanitizer()) {
         override suspend fun writePdfToCache(documentId: String, pdfBytes: ByteArray): File {
             val file = File.createTempFile("fake_cache_", ".pdf")
             file.writeBytes(pdfBytes)

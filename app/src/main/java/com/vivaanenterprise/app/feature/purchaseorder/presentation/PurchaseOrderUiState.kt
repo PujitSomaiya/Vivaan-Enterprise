@@ -4,20 +4,14 @@ import com.vivaanenterprise.app.domain.model.Client
 import com.vivaanenterprise.app.domain.model.DocumentCalculationResult
 import com.vivaanenterprise.app.domain.model.Product
 
+import com.vivaanenterprise.app.feature.document.presentation.model.DocumentLineUiState
+
 enum class PurchaseOrderMode {
     NEW,
     EDIT_DRAFT
 }
 
-data class PurchaseOrderLineUiState(
-    val id: String,
-    val selectedProduct: Product? = null,
-    val quantityInput: String = "1",
-    val rateInput: String = "",
-    val quantityError: String? = null,
-    val rateError: String? = null,
-    val productError: String? = null
-)
+typealias PurchaseOrderLineUiState = DocumentLineUiState
 
 data class PurchaseOrderUiState(
     val mode: PurchaseOrderMode = PurchaseOrderMode.NEW,

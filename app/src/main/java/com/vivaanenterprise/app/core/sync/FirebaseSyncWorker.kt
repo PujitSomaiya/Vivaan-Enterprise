@@ -23,8 +23,11 @@ class FirebaseSyncWorker @AssistedInject constructor(
             } else {
                 Result.retry()
             }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             Result.retry()
         }
     }
+
 }

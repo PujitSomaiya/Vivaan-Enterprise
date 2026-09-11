@@ -138,6 +138,7 @@ class ClientViewModelsTest {
             id = "c-99",
             companyName = "Existing Co",
             state = "Gujarat",
+            stateCode = "24",
             createdAt = 1000L,
             updatedAt = 1000L
         )
@@ -147,7 +148,56 @@ class ClientViewModelsTest {
 
         assertEquals("Existing Co", viewModel.uiState.value.companyName)
         assertEquals("Gujarat", viewModel.uiState.value.state)
+        assertEquals("24", viewModel.uiState.value.stateCode)
         assertTrue(viewModel.uiState.value.isEditMode)
+    }
+
+    @Test
+    fun testStateSelectedUpdatesStateAndStateCodeAtomically() = runTest {
+        val viewModel = ClientFormViewModel(fakeRepository, SavedStateHandle())
+
+        viewModel.onIntent(ClientFormUiIntent.StateSelected("33"))
+        advanceUntilIdle()
+
+        assertEquals("Tamil Nadu", viewModel.uiState.value.state)
+        assertEquals("33", viewModel.uiState.value.stateCode)
+        assertNull(viewModel.uiState.value.stateCodeError)
+    }
+
+    @Test
+    fun testEditModeLegacyMismatchedStateCodeResolvesDeterministicallyByCode() = runTest {
+        fakeRepository.clientMap["c-legacy"] = Client(
+            id = "c-legacy",
+            companyName = "Legacy Client",
+            state = "Wrong State Name",
+            stateCode = "27",
+            createdAt = 1000L,
+            updatedAt = 1000L
+        )
+
+        val viewModel = ClientFormViewModel(fakeRepository, SavedStateHandle(mapOf("clientId" to "c-legacy")))
+        advanceUntilIdle()
+
+        assertEquals("Maharashtra", viewModel.uiState.value.state)
+        assertEquals("27", viewModel.uiState.value.stateCode)
+    }
+
+    @Test
+    fun testEditModeUnknownLegacyCodeDoesNotCrash() = runTest {
+        fakeRepository.clientMap["c-unknown"] = Client(
+            id = "c-unknown",
+            companyName = "Unknown Code Client",
+            state = "Custom Territory",
+            stateCode = "99",
+            createdAt = 1000L,
+            updatedAt = 1000L
+        )
+
+        val viewModel = ClientFormViewModel(fakeRepository, SavedStateHandle(mapOf("clientId" to "c-unknown")))
+        advanceUntilIdle()
+
+        assertEquals("Custom Territory", viewModel.uiState.value.state)
+        assertEquals("99", viewModel.uiState.value.stateCode)
     }
 
     @Test
