@@ -151,7 +151,13 @@ fun DashboardScreen(
                 actions = {
                     // Sync action button
                     IconButton(
-                        onClick = onSyncNowClick,
+                        onClick = {
+                            if (uiState.syncSummary.failedCount > 0) {
+                                onShowSyncDiagnostics()
+                            } else {
+                                onSyncNowClick()
+                            }
+                        },
                         enabled = !uiState.syncSummary.isSyncing && !uiState.isManualSyncing
                     ) {
                         if (uiState.syncSummary.isSyncing || uiState.isManualSyncing) {
@@ -295,98 +301,92 @@ private fun DashboardSyncStatusCard(
     val hasFailed = syncSummary.failedCount > 0
     val hasPending = syncSummary.unsyncedCount > 0
 
-    val (bgColor, textColor, icon, label) = when {
-        isBusy -> {
-            Tuple4(
-                AppTheme.colorScheme.primaryContainer,
-                AppTheme.colorScheme.onPrimaryContainer,
-                Icons.Default.Refresh,
-                stringResource(R.string.sync_status_syncing)
-            )
-        }
-        hasFailed -> {
-            Tuple4(
-                LightErrorContainer,
-                LightOnErrorContainer,
-                Icons.Default.Warning,
-                stringResource(R.string.sync_status_failed, syncSummary.failedCount)
-            )
-        }
-        hasPending -> {
-            Tuple4(
-                LightWarningContainer,
-                LightOnWarningContainer,
-                Icons.Default.Info,
-                stringResource(R.string.sync_status_pending, syncSummary.unsyncedCount)
-            )
-        }
-        else -> {
-            Tuple4(
-                LightSuccessContainer,
-                LightOnSuccessContainer,
-                Icons.Default.CheckCircle,
-                stringResource(R.string.sync_status_synced)
-            )
-        }
-    }
-
-    Surface(
-        color = bgColor,
-        shape = AppTheme.shapes.medium,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onViewDetails)
+    // Auto-hide when fully synced with no errors or pending changes
+    androidx.compose.animation.AnimatedVisibility(
+        visible = isBusy || hasFailed || hasPending,
+        enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.expandVertically(),
+        exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.shrinkVertically()
     ) {
-        Row(
+        val (bgColor, textColor, icon, label) = when {
+            isBusy -> {
+                Tuple4(
+                    AppTheme.colorScheme.primaryContainer,
+                    AppTheme.colorScheme.onPrimaryContainer,
+                    Icons.Default.Refresh,
+                    stringResource(R.string.sync_status_syncing)
+                )
+            }
+            hasFailed -> {
+                Tuple4(
+                    LightErrorContainer,
+                    LightOnErrorContainer,
+                    Icons.Default.Warning,
+                    stringResource(R.string.sync_status_failed, syncSummary.failedCount)
+                )
+            }
+            else -> {
+                Tuple4(
+                    LightWarningContainer,
+                    LightOnWarningContainer,
+                    Icons.Default.Info,
+                    stringResource(R.string.sync_status_pending, syncSummary.unsyncedCount)
+                )
+            }
+        }
+
+        Surface(
+            color = bgColor,
+            shape = AppTheme.shapes.small,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = AppTheme.spacing.md, vertical = AppTheme.spacing.sm),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .clickable(onClick = onViewDetails)
         ) {
             Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = AppTheme.spacing.sm, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
-                modifier = Modifier.weight(1f)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                if (isBusy) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp,
-                        color = textColor
-                    )
-                } else {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = textColor,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                Column {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    if (isBusy) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = textColor
+                        )
+                    } else {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = textColor,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                     Text(
                         text = label,
-                        style = AppTheme.typography.bodyMedium,
+                        style = AppTheme.typography.labelMedium,
                         color = textColor,
                         fontWeight = FontWeight.SemiBold
                     )
-                    if (syncSummary.lastSyncTimestamp > 0L) {
-                        Text(
-                            text = "Last synced: ${formatTimestamp(syncSummary.lastSyncTimestamp)}",
-                            style = AppTheme.typography.labelSmall,
-                            color = textColor.copy(alpha = 0.8f)
-                        )
-                    }
                 }
-            }
 
-            TextButton(onClick = onSyncNow, enabled = !isBusy) {
-                Text(
-                    text = stringResource(R.string.sync_action_now),
-                    style = AppTheme.typography.labelMedium,
-                    color = textColor,
-                    fontWeight = FontWeight.Bold
-                )
+                TextButton(
+                    onClick = onSyncNow,
+                    enabled = !isBusy,
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = if (hasFailed) stringResource(R.string.retry_action_default) else stringResource(R.string.sync_action_now),
+                        style = AppTheme.typography.labelSmall,
+                        color = textColor,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }

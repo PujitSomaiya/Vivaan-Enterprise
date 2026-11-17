@@ -27,8 +27,9 @@
 - In `VivaanEnterpriseApp.kt` (`MainViewModel`), registered `schedulePeriodicSync()` on app startup when authenticated.
 
 ### 4. Dashboard Sync Status Banner, Manual Action & Diagnostics Dialog
-- Added Sync Action button in `TopAppBar` with animated rotation/progress indicator while syncing and error tint if failed items exist.
-- Added `DashboardSyncStatusCard` displaying real-time sync state (Synced, Syncing, Pending, Failed) and last synced timestamp.
+- Added Sync Action button in `TopAppBar` with animated rotation/progress indicator while syncing and error tint if failed items exist. Tapping it when failed opens the diagnostics sheet directly.
+- Refined `DashboardSyncStatusCard` to auto-hide via `AnimatedVisibility` when all data is synced (`!isBusy && !hasFailed && !hasPending`), removing redundant banners and keeping the home screen clean.
+- Made the banner compact (reduced height, 6.dp padding, small shape) when active (only displaying during sync, pending changes, or errors).
 - Added `SyncDiagnosticsDialog` to inspect exact status, last sync timestamp, last attempt timestamp, unsynced count, failed count, and last error message.
 
 ### 5. Verification & Testing
