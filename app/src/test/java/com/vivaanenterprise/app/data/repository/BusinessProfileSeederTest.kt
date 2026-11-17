@@ -55,4 +55,12 @@ class FakeBusinessProfileDao : BusinessProfileDao {
     override suspend fun getProfile(): BusinessProfileEntity? {
         return profile
     }
+
+    override suspend fun getUnsyncedProfile(): BusinessProfileEntity? {
+        return profile?.takeIf { it.syncStatus == SyncStatus.PENDING || it.syncStatus == SyncStatus.FAILED }
+    }
+
+    override fun observeUnsyncedCount(): Flow<Int> {
+        return flowOf(if (profile?.let { it.syncStatus == SyncStatus.PENDING || it.syncStatus == SyncStatus.FAILED } == true) 1 else 0)
+    }
 }

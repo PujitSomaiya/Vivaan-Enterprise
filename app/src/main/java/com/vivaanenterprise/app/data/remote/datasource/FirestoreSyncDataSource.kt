@@ -16,47 +16,51 @@ import javax.inject.Singleton
 
 @Singleton
 open class FirestoreSyncDataSource @Inject constructor(
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore?
 ) {
+    constructor() : this(null)
+
+    private fun requireFirestore(): FirebaseFirestore =
+        firestore ?: throw IllegalStateException("Firestore not initialized")
 
     // Push methods
     open suspend fun pushBusinessProfile(dto: BusinessProfileDto) {
-        firestore.collection(FirestoreCollections.BUSINESS_PROFILES)
+        requireFirestore().collection(FirestoreCollections.BUSINESS_PROFILES)
             .document(dto.id)
             .set(dto, SetOptions.merge())
             .await()
     }
 
     open suspend fun pushClient(dto: ClientDto) {
-        firestore.collection(FirestoreCollections.CLIENTS)
+        requireFirestore().collection(FirestoreCollections.CLIENTS)
             .document(dto.id)
             .set(dto, SetOptions.merge())
             .await()
     }
 
     open suspend fun pushProduct(dto: ProductDto) {
-        firestore.collection(FirestoreCollections.PRODUCTS)
+        requireFirestore().collection(FirestoreCollections.PRODUCTS)
             .document(dto.id)
             .set(dto, SetOptions.merge())
             .await()
     }
 
     open suspend fun pushBusinessDocument(dto: BusinessDocumentDto) {
-        firestore.collection(FirestoreCollections.DOCUMENTS)
+        requireFirestore().collection(FirestoreCollections.DOCUMENTS)
             .document(dto.id)
             .set(dto, SetOptions.merge())
             .await()
     }
 
     open suspend fun pushDocumentLineItem(dto: DocumentLineItemDto) {
-        firestore.collection(FirestoreCollections.DOCUMENT_LINE_ITEMS)
+        requireFirestore().collection(FirestoreCollections.DOCUMENT_LINE_ITEMS)
             .document(dto.id)
             .set(dto, SetOptions.merge())
             .await()
     }
 
     open suspend fun pushClientAccountEntry(dto: ClientAccountEntryDto) {
-        firestore.collection(FirestoreCollections.CLIENT_ACCOUNT_ENTRIES)
+        requireFirestore().collection(FirestoreCollections.CLIENT_ACCOUNT_ENTRIES)
             .document(dto.id)
             .set(dto, SetOptions.merge())
             .await()
@@ -64,7 +68,7 @@ open class FirestoreSyncDataSource @Inject constructor(
 
     open suspend fun pushDocumentSequence(dto: DocumentSequenceDto) {
         val compositeId = "${dto.documentType}_${dto.financialYear}"
-        firestore.collection(FirestoreCollections.DOCUMENT_SEQUENCES)
+        requireFirestore().collection(FirestoreCollections.DOCUMENT_SEQUENCES)
             .document(compositeId)
             .set(dto, SetOptions.merge())
             .await()
@@ -72,7 +76,7 @@ open class FirestoreSyncDataSource @Inject constructor(
 
     // Pull methods
     open suspend fun pullBusinessProfilesSince(sinceTimestamp: Long): List<BusinessProfileDto> {
-        return firestore.collection(FirestoreCollections.BUSINESS_PROFILES)
+        return requireFirestore().collection(FirestoreCollections.BUSINESS_PROFILES)
             .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
             .get()
             .await()
@@ -80,7 +84,7 @@ open class FirestoreSyncDataSource @Inject constructor(
     }
 
     open suspend fun pullClientsSince(sinceTimestamp: Long): List<ClientDto> {
-        return firestore.collection(FirestoreCollections.CLIENTS)
+        return requireFirestore().collection(FirestoreCollections.CLIENTS)
             .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
             .get()
             .await()
@@ -88,7 +92,7 @@ open class FirestoreSyncDataSource @Inject constructor(
     }
 
     open suspend fun pullProductsSince(sinceTimestamp: Long): List<ProductDto> {
-        return firestore.collection(FirestoreCollections.PRODUCTS)
+        return requireFirestore().collection(FirestoreCollections.PRODUCTS)
             .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
             .get()
             .await()
@@ -96,7 +100,7 @@ open class FirestoreSyncDataSource @Inject constructor(
     }
 
     open suspend fun pullBusinessDocumentsSince(sinceTimestamp: Long): List<BusinessDocumentDto> {
-        return firestore.collection(FirestoreCollections.DOCUMENTS)
+        return requireFirestore().collection(FirestoreCollections.DOCUMENTS)
             .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
             .get()
             .await()
@@ -104,7 +108,7 @@ open class FirestoreSyncDataSource @Inject constructor(
     }
 
     open suspend fun pullDocumentLineItemsSince(sinceTimestamp: Long): List<DocumentLineItemDto> {
-        return firestore.collection(FirestoreCollections.DOCUMENT_LINE_ITEMS)
+        return requireFirestore().collection(FirestoreCollections.DOCUMENT_LINE_ITEMS)
             .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
             .get()
             .await()
@@ -112,7 +116,7 @@ open class FirestoreSyncDataSource @Inject constructor(
     }
 
     open suspend fun pullClientAccountEntriesSince(sinceTimestamp: Long): List<ClientAccountEntryDto> {
-        return firestore.collection(FirestoreCollections.CLIENT_ACCOUNT_ENTRIES)
+        return requireFirestore().collection(FirestoreCollections.CLIENT_ACCOUNT_ENTRIES)
             .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
             .get()
             .await()
@@ -120,11 +124,10 @@ open class FirestoreSyncDataSource @Inject constructor(
     }
 
     open suspend fun pullDocumentSequencesSince(sinceTimestamp: Long): List<DocumentSequenceDto> {
-        return firestore.collection(FirestoreCollections.DOCUMENT_SEQUENCES)
+        return requireFirestore().collection(FirestoreCollections.DOCUMENT_SEQUENCES)
             .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
             .get()
             .await()
             .toObjects(DocumentSequenceDto::class.java)
     }
 }
-

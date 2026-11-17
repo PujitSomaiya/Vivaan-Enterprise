@@ -74,7 +74,11 @@ class DocumentRepositoryTest {
         var idCount = 1
         idGenerator   = object : IdGenerator { override fun newId(): String = "test-id-${idCount++}" }
         timeProvider  = object : TimeProvider  { override fun currentTimeMillis(): Long = 1700000000000L }
-        syncScheduler = object : SyncScheduler { override fun enqueueSync() {} }
+        syncScheduler = object : SyncScheduler {
+            override fun enqueueSync(forceImmediate: Boolean) {}
+            override fun schedulePeriodicSync() {}
+            override fun cancelSync() {}
+        }
 
         // Real calculator — tests now verify internally computed financial values
         val calculator = DocumentCalculator(IndianCurrencyFormatter())
@@ -524,6 +528,17 @@ private class FakeBusinessDocumentDao : BusinessDocumentDao {
         return documents.values.filter { it.syncStatus == status }
     }
 
+    override suspend fun getBySyncStatuses(statuses: List<SyncStatus>): List<BusinessDocumentEntity> {
+        return documents.values.filter { it.syncStatus in statuses }
+    }
+
+    override suspend fun getUnsynced(): List<BusinessDocumentEntity> {
+        return documents.values.filter { it.syncStatus == SyncStatus.PENDING || it.syncStatus == SyncStatus.FAILED }
+    }
+
+    override fun observeUnsyncedCount(): Flow<Int> = flowOf(0)
+    override fun observeFailedCount(): Flow<Int> = flowOf(0)
+
     override suspend fun findByDocumentTypeAndNumber(
         documentType: DocumentType,
         documentNumber: String
@@ -575,6 +590,10 @@ private class FakeClientDao : ClientDao {
     override fun observeById(id: String): Flow<ClientEntity?> = flowOf(runBlocking { getById(id) })
     override fun observeActiveClients(): Flow<List<ClientEntity>> = flowOf(clients.values.filter { !it.isDeleted })
     override suspend fun getBySyncStatus(status: SyncStatus): List<ClientEntity> = emptyList()
+    override suspend fun getBySyncStatuses(statuses: List<SyncStatus>): List<ClientEntity> = emptyList()
+    override suspend fun getUnsynced(): List<ClientEntity> = emptyList()
+    override fun observeUnsyncedCount(): Flow<Int> = flowOf(0)
+    override fun observeFailedCount(): Flow<Int> = flowOf(0)
     override suspend fun softDelete(id: String, deletedAt: Long, updatedAt: Long, syncStatus: SyncStatus) {}
 }
 
@@ -588,6 +607,10 @@ private class FakeProductDao : ProductDao {
     override fun observeAllProducts(): Flow<List<ProductEntity>> = flowOf(products.values.filter { !it.isDeleted })
     override fun observeActiveProducts(): Flow<List<ProductEntity>> = flowOf(products.values.filter { !it.isDeleted && it.isActive })
     override suspend fun getBySyncStatus(status: SyncStatus): List<ProductEntity> = emptyList()
+    override suspend fun getBySyncStatuses(statuses: List<SyncStatus>): List<ProductEntity> = emptyList()
+    override suspend fun getUnsynced(): List<ProductEntity> = emptyList()
+    override fun observeUnsyncedCount(): Flow<Int> = flowOf(0)
+    override fun observeFailedCount(): Flow<Int> = flowOf(0)
     override suspend fun softDelete(id: String, deletedAt: Long, updatedAt: Long, syncStatus: SyncStatus) {}
 }
 
@@ -622,6 +645,17 @@ private class FakeClientAccountEntryDao : ClientAccountEntryDao {
     override suspend fun getBySyncStatus(status: SyncStatus): List<ClientAccountEntryEntity> {
         return entries.values.filter { it.syncStatus == status }
     }
+
+    override suspend fun getBySyncStatuses(statuses: List<SyncStatus>): List<ClientAccountEntryEntity> {
+        return entries.values.filter { it.syncStatus in statuses }
+    }
+
+    override suspend fun getUnsynced(): List<ClientAccountEntryEntity> {
+        return entries.values.filter { it.syncStatus == SyncStatus.PENDING || it.syncStatus == SyncStatus.FAILED }
+    }
+
+    override fun observeUnsyncedCount(): Flow<Int> = flowOf(0)
+    override fun observeFailedCount(): Flow<Int> = flowOf(0)
 
     override suspend fun findByDocumentId(documentId: String): ClientAccountEntryEntity? {
         return entries.values.find { it.documentId == documentId && !it.isDeleted }

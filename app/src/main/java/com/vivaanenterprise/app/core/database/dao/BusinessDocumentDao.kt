@@ -34,6 +34,18 @@ interface BusinessDocumentDao {
     @Query("SELECT * FROM business_documents WHERE syncStatus = :status")
     suspend fun getBySyncStatus(status: SyncStatus): List<BusinessDocumentEntity>
 
+    @Query("SELECT * FROM business_documents WHERE syncStatus IN (:statuses)")
+    suspend fun getBySyncStatuses(statuses: List<SyncStatus>): List<BusinessDocumentEntity>
+
+    @Query("SELECT * FROM business_documents WHERE syncStatus IN ('PENDING', 'FAILED')")
+    suspend fun getUnsynced(): List<BusinessDocumentEntity>
+
+    @Query("SELECT COUNT(*) FROM business_documents WHERE syncStatus IN ('PENDING', 'FAILED')")
+    fun observeUnsyncedCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM business_documents WHERE syncStatus = 'FAILED'")
+    fun observeFailedCount(): Flow<Int>
+
     @Query("SELECT * FROM business_documents WHERE documentType = :documentType AND documentNumber = :documentNumber AND isDeleted = 0 LIMIT 1")
     suspend fun findByDocumentTypeAndNumber(documentType: DocumentType, documentNumber: String): BusinessDocumentEntity?
 

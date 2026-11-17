@@ -30,6 +30,18 @@ interface ProductDao {
     @Query("SELECT * FROM products WHERE syncStatus = :status")
     suspend fun getBySyncStatus(status: SyncStatus): List<ProductEntity>
 
+    @Query("SELECT * FROM products WHERE syncStatus IN (:statuses)")
+    suspend fun getBySyncStatuses(statuses: List<SyncStatus>): List<ProductEntity>
+
+    @Query("SELECT * FROM products WHERE syncStatus IN ('PENDING', 'FAILED')")
+    suspend fun getUnsynced(): List<ProductEntity>
+
+    @Query("SELECT COUNT(*) FROM products WHERE syncStatus IN ('PENDING', 'FAILED')")
+    fun observeUnsyncedCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM products WHERE syncStatus = 'FAILED'")
+    fun observeFailedCount(): Flow<Int>
+
     @Query("UPDATE products SET isDeleted = 1, deletedAt = :deletedAt, updatedAt = :updatedAt, syncStatus = :syncStatus WHERE id = :id")
     suspend fun softDelete(id: String, deletedAt: Long, updatedAt: Long, syncStatus: SyncStatus = SyncStatus.PENDING)
 }

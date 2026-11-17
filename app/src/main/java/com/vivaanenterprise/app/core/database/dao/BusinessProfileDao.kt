@@ -16,4 +16,10 @@ interface BusinessProfileDao {
 
     @Query("SELECT * FROM business_profiles LIMIT 1")
     suspend fun getProfile(): BusinessProfileEntity?
+
+    @Query("SELECT * FROM business_profiles WHERE syncStatus IN ('PENDING', 'FAILED') LIMIT 1")
+    suspend fun getUnsyncedProfile(): BusinessProfileEntity?
+
+    @Query("SELECT COUNT(*) FROM business_profiles WHERE syncStatus IN ('PENDING', 'FAILED')")
+    fun observeUnsyncedCount(): Flow<Int>
 }

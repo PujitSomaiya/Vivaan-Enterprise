@@ -28,7 +28,7 @@
     2. *WorkManager Scheduling*: Add periodic background sync worker (`PeriodicWorkRequest`) with network constraints in addition to one-time startup/write triggers.
     3. *Manual Sync & Diagnostics UI*: Add a "Sync Now" / "Retry" action and sync status banner/indicator on the Dashboard/Top Bar with feedback on last sync time and error state.
     4. *Diagnostics & Verification*: Provide count/status visibility of pending & failed entities (Clients, Products, Documents, Ledgers); verify end-to-end recovery using unit tests.
-  - **Status**: In Progress (Branch: `bug/sync-ui-issue-17-nov-2026`)
+  - **Status**: Completed (Verified via `./gradlew testDebugUnitTest`, `./gradlew lintDebug`, `./gradlew assembleDebug`, `./gradlew assembleRelease`)
 - **Phase 20: Performance & Recomposition Audit**
   - Goal: Verify `@Stable` and `@Immutable` contracts across all UiState classes, verify LazyColumn key stability.
   - Status: Planned
