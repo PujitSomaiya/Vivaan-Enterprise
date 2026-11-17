@@ -26,6 +26,11 @@ class SyncRepositoryImpl @Inject constructor(
     private val timeProvider: TimeProvider
 ) : SyncRepository {
 
+    companion object {
+        // Safety lookback buffer (24 hours) to prevent device clock skews or delayed uploads from dropping records
+        private const val LOOKBACK_WINDOW_MS = 24 * 60 * 60 * 1000L
+    }
+
     private val _isSyncing = MutableStateFlow(false)
 
     private val unsyncedCountFlow: Flow<Int> = combine(
@@ -62,7 +67,7 @@ class SyncRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun synchronize(): Result<Unit> {
+    override suspend fun synchronize(forceReconcile: Boolean): Result<Unit> {
         val currentUser = authRepository.getCurrentUser()
         if (currentUser == null) {
             return Result.success(Unit)
@@ -72,11 +77,19 @@ class SyncRepositoryImpl @Inject constructor(
         val syncStartTime = timeProvider.currentTimeMillis()
         val lastSyncTime = syncPreferencesDataStore.getLastSyncTimestamp()
 
+        // When forceReconcile is requested (e.g. manual "Sync Now" or initial sync), pull all records (timestamp 0).
+        // Otherwise, apply a 24-hour safety lookback window so device clock skew or offline delay never drops records.
+        val effectivePullTimestamp = if (forceReconcile || lastSyncTime <= 0L) {
+            0L
+        } else {
+            maxOf(0L, lastSyncTime - LOOKBACK_WINDOW_MS)
+        }
+
         return try {
             var pushError: Throwable? = null
 
             // ==========================================
-            // STEP 1: PUSH LOCAL UNSYNCED (PENDING + FAILED) CHANGES
+            // STEP 1: PUSH LOCAL UNSYNCED (PENDING + FAILED) CHANGES & SEQUENCES
             // ==========================================
 
             // 1. Business Profile
@@ -143,6 +156,16 @@ class SyncRepositoryImpl @Inject constructor(
                 }
             }
 
+            // 6. Document Sequences (Synchronize numbering sequences so devices coordinate numbering)
+            val localSequences = db.documentSequenceDao().getAll()
+            for (seq in localSequences) {
+                try {
+                    firestoreSyncDataSource.pushDocumentSequence(seq.toDto())
+                } catch (e: Exception) {
+                    if (pushError == null) pushError = e
+                }
+            }
+
             // If any entity push threw a hard error (such as security rule rejection), propagate it
             if (pushError != null) {
                 throw pushError
@@ -153,15 +176,15 @@ class SyncRepositoryImpl @Inject constructor(
             // ==========================================
 
             // Order 1: Business Profile
-            val remoteProfiles = firestoreSyncDataSource.pullBusinessProfilesSince(lastSyncTime)
+            val remoteProfiles = firestoreSyncDataSource.pullBusinessProfilesSince(effectivePullTimestamp)
             for (remoteDto in remoteProfiles) {
                 db.businessProfileDao().upsert(remoteDto.toEntity(syncedAt = syncStartTime))
             }
 
             // Order 2: Clients
-            val remoteClients = firestoreSyncDataSource.pullClientsSince(lastSyncTime)
+            val remoteClients = firestoreSyncDataSource.pullClientsSince(effectivePullTimestamp)
             for (remoteDto in remoteClients) {
-                val localClient = db.clientDao().getById(remoteDto.id)
+                val localClient = db.clientDao().getByIdIncludingDeleted(remoteDto.id)
                 when (SyncMergePolicy.evaluateClientMerge(localClient, remoteDto.isDeleted, remoteDto.updatedAt)) {
                     SyncMergePolicy.MergeResult.ACCEPT_REMOTE -> {
                         db.clientDao().upsert(remoteDto.toEntity(syncedAt = syncStartTime))
@@ -172,9 +195,9 @@ class SyncRepositoryImpl @Inject constructor(
             }
 
             // Order 3: Products
-            val remoteProducts = firestoreSyncDataSource.pullProductsSince(lastSyncTime)
+            val remoteProducts = firestoreSyncDataSource.pullProductsSince(effectivePullTimestamp)
             for (remoteDto in remoteProducts) {
-                val localProduct = db.productDao().getById(remoteDto.id)
+                val localProduct = db.productDao().getByIdIncludingDeleted(remoteDto.id)
                 when (SyncMergePolicy.evaluateProductMerge(localProduct, remoteDto.isDeleted, remoteDto.updatedAt)) {
                     SyncMergePolicy.MergeResult.ACCEPT_REMOTE -> {
                         db.productDao().upsert(remoteDto.toEntity(syncedAt = syncStartTime))
@@ -185,7 +208,7 @@ class SyncRepositoryImpl @Inject constructor(
             }
 
             // Order 4: Business Documents
-            val remoteDocuments = firestoreSyncDataSource.pullBusinessDocumentsSince(lastSyncTime)
+            val remoteDocuments = firestoreSyncDataSource.pullBusinessDocumentsSince(effectivePullTimestamp)
             for (remoteDto in remoteDocuments) {
                 val localDoc = db.businessDocumentDao().getByIdIncludingDeleted(remoteDto.id)
                 when (SyncMergePolicy.evaluateDocumentMerge(localDoc, remoteDto.isDeleted, remoteDto.updatedAt)) {
@@ -198,9 +221,9 @@ class SyncRepositoryImpl @Inject constructor(
             }
 
             // Order 5: Document Line Items (Foreign Key Parent: BusinessDocument)
-            val remoteItems = firestoreSyncDataSource.pullDocumentLineItemsSince(lastSyncTime)
+            val remoteItems = firestoreSyncDataSource.pullDocumentLineItemsSince(effectivePullTimestamp)
             for (remoteDto in remoteItems) {
-                val parentDoc = db.businessDocumentDao().getById(remoteDto.documentId)
+                val parentDoc = db.businessDocumentDao().getByIdIncludingDeleted(remoteDto.documentId)
                 if (parentDoc != null) {
                     when (SyncMergePolicy.evaluateLineItemMerge(parentDoc)) {
                         SyncMergePolicy.MergeResult.ACCEPT_REMOTE -> {
@@ -212,11 +235,17 @@ class SyncRepositoryImpl @Inject constructor(
             }
 
             // Order 6: Client Account Entries (Foreign Key Parents: Client, BusinessDocument)
-            val remoteEntries = firestoreSyncDataSource.pullClientAccountEntriesSince(lastSyncTime)
+            val remoteEntries = firestoreSyncDataSource.pullClientAccountEntriesSince(effectivePullTimestamp)
             for (remoteDto in remoteEntries) {
                 val localEntry = db.clientAccountEntryDao().getBySyncStatus(SyncStatus.SYNCED).firstOrNull { it.id == remoteDto.id }
-                val parentClient = db.clientDao().getById(remoteDto.clientId)
-                if (parentClient != null) {
+                val parentClient = db.clientDao().getByIdIncludingDeleted(remoteDto.clientId)
+                val parentDoc = if (remoteDto.documentId != null) {
+                    db.businessDocumentDao().getByIdIncludingDeleted(remoteDto.documentId)
+                } else null
+
+                // Foreign key constraint safety: only insert if required parent entities exist locally
+                val canInsert = parentClient != null && (remoteDto.documentId == null || parentDoc != null)
+                if (canInsert) {
                     when (SyncMergePolicy.evaluateAccountEntryMerge(localEntry, remoteDto.updatedAt)) {
                         SyncMergePolicy.MergeResult.ACCEPT_REMOTE -> {
                             db.clientAccountEntryDao().upsert(remoteDto.toEntity(syncedAt = syncStartTime))
@@ -226,10 +255,23 @@ class SyncRepositoryImpl @Inject constructor(
                 }
             }
 
-            // Order 7: Document Sequences
-            val remoteSequences = firestoreSyncDataSource.pullDocumentSequencesSince(lastSyncTime)
+            // Order 7: Document Sequences (Merge by taking max sequence number across devices)
+            val remoteSequences = firestoreSyncDataSource.pullDocumentSequencesSince(effectivePullTimestamp)
             for (remoteDto in remoteSequences) {
-                db.documentSequenceDao().upsert(remoteDto.toEntity())
+                val docType = try {
+                    com.vivaanenterprise.app.core.common.DocumentType.valueOf(remoteDto.documentType)
+                } catch (e: Exception) {
+                    continue
+                }
+                val localSeq = db.documentSequenceDao().getSequence(docType, remoteDto.financialYear)
+                val finalLastSeq = maxOf(localSeq?.lastSequenceNumber ?: 0, remoteDto.lastSequenceNumber)
+                val mergedEntity = com.vivaanenterprise.app.core.database.entity.DocumentSequenceEntity(
+                    documentType = docType,
+                    financialYear = remoteDto.financialYear,
+                    lastSequenceNumber = finalLastSeq,
+                    updatedAt = maxOf(localSeq?.updatedAt ?: 0L, remoteDto.updatedAt)
+                )
+                db.documentSequenceDao().upsert(mergedEntity)
             }
 
             // Advance Cursor ONLY after complete pull succeeds

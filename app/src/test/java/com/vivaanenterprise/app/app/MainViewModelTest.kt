@@ -88,7 +88,7 @@ private class FakeAuthRepository : AuthRepository {
 private class FakeSyncScheduler : SyncScheduler {
     var enqueueCount = 0
     var periodicCount = 0
-    override fun enqueueSync(forceImmediate: Boolean) {
+    override fun enqueueSync(forceImmediate: Boolean, forceReconcile: Boolean) {
         enqueueCount++
     }
     override fun schedulePeriodicSync() {

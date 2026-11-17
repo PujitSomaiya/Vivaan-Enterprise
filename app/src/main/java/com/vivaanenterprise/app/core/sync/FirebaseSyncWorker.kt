@@ -15,9 +15,14 @@ class FirebaseSyncWorker @AssistedInject constructor(
     private val syncRepository: SyncRepository
 ) : CoroutineWorker(appContext, workerParams) {
 
+    companion object {
+        const val KEY_FORCE_RECONCILE = "key_force_reconcile"
+    }
+
     override suspend fun doWork(): Result {
         return try {
-            val result = syncRepository.synchronize()
+            val forceReconcile = inputData.getBoolean(KEY_FORCE_RECONCILE, false)
+            val result = syncRepository.synchronize(forceReconcile = forceReconcile)
             if (result.isSuccess) {
                 Result.success()
             } else {

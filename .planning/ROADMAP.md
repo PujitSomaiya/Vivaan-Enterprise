@@ -36,7 +36,7 @@
     2. *Foreign Key Dependency Ordering & Transaction Safety*: Guarantee atomic, dependency-ordered ingestion into Room (BusinessProfile -> Clients -> Products -> BusinessDocuments -> LineItems -> ClientAccountEntries) with missing parent fallbacks so foreign key constraints never fail on remote pull.
     3. *Document Sequence Multi-Device Sync*: Implement outbound push and inbound pull for `DocumentSequenceEntity`, preventing duplicate invoice numbering (`VE/XX/YYYY-YY`) when multiple devices generate documents offline.
     4. *Bidirectional Manual & Periodic Sync Verification*: Verify multi-device scenario in unit and integration tests where Device A creates an invoice and Device B syncs and immediately renders that invoice, its line items, and ledger account entries in Room.
-  - **Status**: Planned
+  - **Status**: Completed (Verified via `./gradlew testDebugUnitTest`, `./gradlew assembleDebug`, `./gradlew assembleRelease`)
 
 - **Phase 21: Compose UI Common Component Refactoring & Code De-duplication**
   - **Goal**: Eliminate redundant, deeply nested boilerplate across all Jetpack Compose UI screens by extracting reusable domain and layout components into clean, small, shared functions.

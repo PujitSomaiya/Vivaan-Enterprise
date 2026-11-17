@@ -2,9 +2,9 @@
 
 ## Current Position
 - **Active Milestone**: Milestone 2: Production Hardening & Sync Engine Recovery
-- **Active Phase**: Phase 20 (Bidirectional Multi-Device Sync Engine) — READY TO PLAN & EXECUTE
-- **Active Branch**: `bug/sync-ui-issue-17-nov-2026`
-- **Current Status**: Phase 19 completed. Phase 20 (Bidirectional Multi-Device Sync) and Phase 21 (Compose UI Refactoring & Code De-duplication) added to roadmap.
+- **Active Phase**: Phase 20 (Bidirectional Multi-Device Sync Engine) — COMPLETED
+- **Active Branch**: `bug/sync-inbound-issue-17-nov-2026`
+- **Current Status**: Phase 20 executed and verified with 43/43 unit tests, debug, and release R8 builds passing. Next is Phase 21 (Compose UI Refactoring & Code De-duplication).
 
 ## Diagnosed Root Cause (Bidirectional Sync & Multi-Device Gap)
 1. **Clock Skew & Brittle Timestamp Cursor**: Remote pull queries currently filter by `whereGreaterThanOrEqualTo("updatedAt", lastSyncTime)`. In a multi-device setup, differences between device system clocks or delayed synchronization cause remote documents to have timestamps earlier than the receiving device's `lastSyncTime`, permanently hiding them from Firestore pull results.

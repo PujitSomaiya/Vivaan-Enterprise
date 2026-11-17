@@ -75,7 +75,7 @@ class DocumentRepositoryTest {
         idGenerator   = object : IdGenerator { override fun newId(): String = "test-id-${idCount++}" }
         timeProvider  = object : TimeProvider  { override fun currentTimeMillis(): Long = 1700000000000L }
         syncScheduler = object : SyncScheduler {
-            override fun enqueueSync(forceImmediate: Boolean) {}
+            override fun enqueueSync(forceImmediate: Boolean, forceReconcile: Boolean) {}
             override fun schedulePeriodicSync() {}
             override fun cancelSync() {}
         }
@@ -587,6 +587,7 @@ private class FakeClientDao : ClientDao {
 
     override suspend fun upsert(client: ClientEntity) { clients[client.id] = client }
     override suspend fun getById(id: String): ClientEntity? = clients[id]?.takeIf { !it.isDeleted }
+    override suspend fun getByIdIncludingDeleted(id: String): ClientEntity? = clients[id]
     override fun observeById(id: String): Flow<ClientEntity?> = flowOf(runBlocking { getById(id) })
     override fun observeActiveClients(): Flow<List<ClientEntity>> = flowOf(clients.values.filter { !it.isDeleted })
     override suspend fun getBySyncStatus(status: SyncStatus): List<ClientEntity> = emptyList()
@@ -629,6 +630,8 @@ private class FakeDocumentSequenceDao : DocumentSequenceDao {
         val key = "${documentType}_${financialYear}"
         return sequences[key]
     }
+
+    override suspend fun getAll(): List<DocumentSequenceEntity> = sequences.values.toList()
 }
 
 private class FakeClientAccountEntryDao : ClientAccountEntryDao {

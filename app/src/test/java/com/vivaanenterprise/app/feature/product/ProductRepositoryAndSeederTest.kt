@@ -332,7 +332,7 @@ private class FakeSyncScheduler : SyncScheduler {
     var enqueueCount = 0
     var shouldFail = false
 
-    override fun enqueueSync(forceImmediate: Boolean) {
+    override fun enqueueSync(forceImmediate: Boolean, forceReconcile: Boolean) {
         enqueueCount++
         if (shouldFail) {
             throw RuntimeException("Sync scheduler error")
