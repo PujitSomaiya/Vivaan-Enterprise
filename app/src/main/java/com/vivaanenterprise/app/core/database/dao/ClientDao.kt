@@ -24,6 +24,18 @@ interface ClientDao {
     @Query("SELECT * FROM clients WHERE syncStatus = :status")
     suspend fun getBySyncStatus(status: SyncStatus): List<ClientEntity>
 
+    @Query("SELECT * FROM clients WHERE syncStatus IN (:statuses)")
+    suspend fun getBySyncStatuses(statuses: List<SyncStatus>): List<ClientEntity>
+
+    @Query("SELECT * FROM clients WHERE syncStatus IN ('PENDING', 'FAILED')")
+    suspend fun getUnsynced(): List<ClientEntity>
+
+    @Query("SELECT COUNT(*) FROM clients WHERE syncStatus IN ('PENDING', 'FAILED')")
+    fun observeUnsyncedCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM clients WHERE syncStatus = 'FAILED'")
+    fun observeFailedCount(): Flow<Int>
+
     @Query("UPDATE clients SET isDeleted = 1, deletedAt = :deletedAt, updatedAt = :updatedAt, syncStatus = :syncStatus WHERE id = :id")
     suspend fun softDelete(id: String, deletedAt: Long, updatedAt: Long, syncStatus: SyncStatus = SyncStatus.PENDING)
 }

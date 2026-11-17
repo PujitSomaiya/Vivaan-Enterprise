@@ -158,6 +158,10 @@ private class FakeAccountDao(
         return kotlinx.coroutines.flow.flowOf(initialEntries.filter { it.clientId == clientId && !it.isDeleted })
     }
     override suspend fun getBySyncStatus(status: SyncStatus): List<ClientAccountEntryEntity> = emptyList()
+    override suspend fun getBySyncStatuses(statuses: List<SyncStatus>): List<ClientAccountEntryEntity> = emptyList()
+    override suspend fun getUnsynced(): List<ClientAccountEntryEntity> = emptyList()
+    override fun observeUnsyncedCount(): kotlinx.coroutines.flow.Flow<Int> = kotlinx.coroutines.flow.flowOf(0)
+    override fun observeFailedCount(): kotlinx.coroutines.flow.Flow<Int> = kotlinx.coroutines.flow.flowOf(0)
     override suspend fun findByDocumentId(documentId: String): ClientAccountEntryEntity? = initialEntries.find { it.documentId == documentId }
     override suspend fun softDelete(id: String, deletedAt: Long, updatedAt: Long, syncStatus: SyncStatus) {}
 }
@@ -181,6 +185,10 @@ private class FakeDocumentDao(
         return flowOf(com.vivaanenterprise.app.core.database.dao.DashboardSummaryProjection(count, total))
     }
     override suspend fun getBySyncStatus(status: com.vivaanenterprise.app.core.common.SyncStatus): List<BusinessDocumentEntity> = docs.values.filter { it.syncStatus == status }
+    override suspend fun getBySyncStatuses(statuses: List<SyncStatus>): List<BusinessDocumentEntity> = docs.values.filter { it.syncStatus in statuses }
+    override suspend fun getUnsynced(): List<BusinessDocumentEntity> = docs.values.filter { it.syncStatus == SyncStatus.PENDING || it.syncStatus == SyncStatus.FAILED }
+    override fun observeUnsyncedCount(): Flow<Int> = flowOf(0)
+    override fun observeFailedCount(): Flow<Int> = flowOf(0)
     override suspend fun findByDocumentTypeAndNumber(documentType: DocumentType, documentNumber: String): BusinessDocumentEntity? = null
     override suspend fun softDelete(id: String, deletedAt: Long, updatedAt: Long, syncStatus: SyncStatus) {}
 }

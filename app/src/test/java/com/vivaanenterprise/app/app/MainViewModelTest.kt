@@ -87,9 +87,14 @@ private class FakeAuthRepository : AuthRepository {
 
 private class FakeSyncScheduler : SyncScheduler {
     var enqueueCount = 0
-    override fun enqueueSync() {
+    var periodicCount = 0
+    override fun enqueueSync(forceImmediate: Boolean) {
         enqueueCount++
     }
+    override fun schedulePeriodicSync() {
+        periodicCount++
+    }
+    override fun cancelSync() {}
 }
 
 private class FakeBusinessProfileSeeder : BusinessProfileSeeder(
@@ -97,6 +102,8 @@ private class FakeBusinessProfileSeeder : BusinessProfileSeeder(
         override suspend fun upsert(profile: com.vivaanenterprise.app.core.database.entity.BusinessProfileEntity) {}
         override fun observeProfile() = flowOf(null)
         override suspend fun getProfile() = null
+        override suspend fun getUnsyncedProfile() = null
+        override fun observeUnsyncedCount() = flowOf(0)
     },
     timeProvider = object : com.vivaanenterprise.app.core.common.TimeProvider {
         override fun currentTimeMillis(): Long = 0L
@@ -117,6 +124,10 @@ private class FakeProductSeeder : ProductSeeder(
         override fun observeAllProducts() = flowOf(emptyList<com.vivaanenterprise.app.core.database.entity.ProductEntity>())
         override fun observeActiveProducts() = flowOf(emptyList<com.vivaanenterprise.app.core.database.entity.ProductEntity>())
         override suspend fun getBySyncStatus(status: com.vivaanenterprise.app.core.common.SyncStatus) = emptyList<com.vivaanenterprise.app.core.database.entity.ProductEntity>()
+        override suspend fun getBySyncStatuses(statuses: List<com.vivaanenterprise.app.core.common.SyncStatus>) = emptyList<com.vivaanenterprise.app.core.database.entity.ProductEntity>()
+        override suspend fun getUnsynced() = emptyList<com.vivaanenterprise.app.core.database.entity.ProductEntity>()
+        override fun observeUnsyncedCount() = flowOf(0)
+        override fun observeFailedCount() = flowOf(0)
         override suspend fun softDelete(id: String, deletedAt: Long, updatedAt: Long, syncStatus: com.vivaanenterprise.app.core.common.SyncStatus) {}
     },
     syncScheduler = FakeSyncScheduler(),

@@ -45,6 +45,7 @@ class MainViewModel @Inject constructor(
                         // Ignore seeder error
                     }
                     try {
+                        syncScheduler.schedulePeriodicSync()
                         syncScheduler.enqueueSync()
                     } catch (e: Exception) {
                         // Ignore sync enqueue error

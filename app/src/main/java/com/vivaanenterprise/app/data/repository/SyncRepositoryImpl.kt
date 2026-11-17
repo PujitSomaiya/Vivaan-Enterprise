@@ -10,6 +10,10 @@ import com.vivaanenterprise.app.data.remote.mapper.toEntity
 import com.vivaanenterprise.app.domain.repository.AuthRepository
 import com.vivaanenterprise.app.domain.repository.SyncMergePolicy
 import com.vivaanenterprise.app.domain.repository.SyncRepository
+import com.vivaanenterprise.app.domain.repository.SyncStatusSummary
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -22,56 +26,98 @@ class SyncRepositoryImpl @Inject constructor(
     private val timeProvider: TimeProvider
 ) : SyncRepository {
 
+    private val _isSyncing = MutableStateFlow(false)
+
+    private val unsyncedCountFlow: Flow<Int> = combine(
+        db.clientDao().observeUnsyncedCount(),
+        db.productDao().observeUnsyncedCount(),
+        db.businessDocumentDao().observeUnsyncedCount(),
+        db.clientAccountEntryDao().observeUnsyncedCount(),
+        db.businessProfileDao().observeUnsyncedCount()
+    ) { counts -> counts.sum() }
+
+    private val failedCountFlow: Flow<Int> = combine(
+        db.clientDao().observeFailedCount(),
+        db.productDao().observeFailedCount(),
+        db.businessDocumentDao().observeFailedCount(),
+        db.clientAccountEntryDao().observeFailedCount()
+    ) { counts -> counts.sum() }
+
+    override fun observeSyncStatus(): Flow<SyncStatusSummary> {
+        return combine(
+            syncPreferencesDataStore.observeSyncMetadata(),
+            _isSyncing,
+            unsyncedCountFlow,
+            failedCountFlow
+        ) { metadata, isSyncing, unsyncedCount, failedCount ->
+            SyncStatusSummary(
+                lastSyncTimestamp = metadata.lastSyncTimestamp,
+                lastSyncAttemptTimestamp = metadata.lastSyncAttemptTimestamp,
+                lastSyncStatus = metadata.lastSyncStatus,
+                lastSyncError = metadata.lastSyncError,
+                unsyncedCount = unsyncedCount,
+                failedCount = failedCount,
+                isSyncing = isSyncing
+            )
+        }
+    }
+
     override suspend fun synchronize(): Result<Unit> {
         val currentUser = authRepository.getCurrentUser()
         if (currentUser == null) {
             return Result.success(Unit)
         }
 
+        _isSyncing.value = true
         val syncStartTime = timeProvider.currentTimeMillis()
         val lastSyncTime = syncPreferencesDataStore.getLastSyncTimestamp()
 
         return try {
+            var pushError: Throwable? = null
+
             // ==========================================
-            // STEP 1: PUSH LOCAL PENDING CHANGES
+            // STEP 1: PUSH LOCAL UNSYNCED (PENDING + FAILED) CHANGES
             // ==========================================
 
             // 1. Business Profile
             val profile = db.businessProfileDao().getProfile()
-            if (profile != null && profile.syncStatus == SyncStatus.PENDING) {
+            if (profile != null && (profile.syncStatus == SyncStatus.PENDING || profile.syncStatus == SyncStatus.FAILED)) {
                 try {
                     firestoreSyncDataSource.pushBusinessProfile(profile.toDto())
                     db.businessProfileDao().upsert(profile.copy(syncStatus = SyncStatus.SYNCED, lastSyncedAt = syncStartTime, syncError = null))
                 } catch (e: Exception) {
                     db.businessProfileDao().upsert(profile.copy(syncStatus = SyncStatus.FAILED, syncError = e.message?.take(100)))
+                    if (pushError == null) pushError = e
                 }
             }
 
-            // 2. Clients
-            val pendingClients = db.clientDao().getBySyncStatus(SyncStatus.PENDING)
-            for (client in pendingClients) {
+            // 2. Clients (Recovers any records that previously failed)
+            val unsyncedClients = db.clientDao().getUnsynced()
+            for (client in unsyncedClients) {
                 try {
                     firestoreSyncDataSource.pushClient(client.toDto())
                     db.clientDao().upsert(client.copy(syncStatus = SyncStatus.SYNCED, lastSyncedAt = syncStartTime, syncError = null))
                 } catch (e: Exception) {
                     db.clientDao().upsert(client.copy(syncStatus = SyncStatus.FAILED, syncError = e.message?.take(100)))
+                    if (pushError == null) pushError = e
                 }
             }
 
-            // 3. Products
-            val pendingProducts = db.productDao().getBySyncStatus(SyncStatus.PENDING)
-            for (product in pendingProducts) {
+            // 3. Products (Recovers any records that previously failed)
+            val unsyncedProducts = db.productDao().getUnsynced()
+            for (product in unsyncedProducts) {
                 try {
                     firestoreSyncDataSource.pushProduct(product.toDto())
                     db.productDao().upsert(product.copy(syncStatus = SyncStatus.SYNCED, lastSyncedAt = syncStartTime, syncError = null))
                 } catch (e: Exception) {
                     db.productDao().upsert(product.copy(syncStatus = SyncStatus.FAILED, syncError = e.message?.take(100)))
+                    if (pushError == null) pushError = e
                 }
             }
 
-            // 4. Business Documents & Line Items
-            val pendingDocuments = db.businessDocumentDao().getBySyncStatus(SyncStatus.PENDING)
-            for (doc in pendingDocuments) {
+            // 4. Business Documents & Line Items (Recovers any records that previously failed)
+            val unsyncedDocuments = db.businessDocumentDao().getUnsynced()
+            for (doc in unsyncedDocuments) {
                 try {
                     firestoreSyncDataSource.pushBusinessDocument(doc.toDto())
                     val lineItems = db.documentLineItemDao().getByDocumentId(doc.id)
@@ -81,18 +127,25 @@ class SyncRepositoryImpl @Inject constructor(
                     db.businessDocumentDao().upsert(doc.copy(syncStatus = SyncStatus.SYNCED, lastSyncedAt = syncStartTime, syncError = null))
                 } catch (e: Exception) {
                     db.businessDocumentDao().upsert(doc.copy(syncStatus = SyncStatus.FAILED, syncError = e.message?.take(100)))
+                    if (pushError == null) pushError = e
                 }
             }
 
-            // 5. Client Account Entries
-            val pendingAccountEntries = db.clientAccountEntryDao().getBySyncStatus(SyncStatus.PENDING)
-            for (entry in pendingAccountEntries) {
+            // 5. Client Account Entries (Recovers any records that previously failed)
+            val unsyncedAccountEntries = db.clientAccountEntryDao().getUnsynced()
+            for (entry in unsyncedAccountEntries) {
                 try {
                     firestoreSyncDataSource.pushClientAccountEntry(entry.toDto())
                     db.clientAccountEntryDao().upsert(entry.copy(syncStatus = SyncStatus.SYNCED, lastSyncedAt = syncStartTime, syncError = null))
                 } catch (e: Exception) {
                     db.clientAccountEntryDao().upsert(entry.copy(syncStatus = SyncStatus.FAILED, syncError = e.message?.take(100)))
+                    if (pushError == null) pushError = e
                 }
+            }
+
+            // If any entity push threw a hard error (such as security rule rejection), propagate it
+            if (pushError != null) {
+                throw pushError
             }
 
             // ==========================================
@@ -180,14 +233,16 @@ class SyncRepositoryImpl @Inject constructor(
             }
 
             // Advance Cursor ONLY after complete pull succeeds
-            syncPreferencesDataStore.setLastSyncTimestamp(syncStartTime)
+            syncPreferencesDataStore.recordSyncSuccess(syncStartTime)
 
             Result.success(Unit)
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {
+            syncPreferencesDataStore.recordSyncFailure(syncStartTime, e.message ?: "Sync failed")
             Result.failure(e)
+        } finally {
+            _isSyncing.value = false
         }
     }
 }
-

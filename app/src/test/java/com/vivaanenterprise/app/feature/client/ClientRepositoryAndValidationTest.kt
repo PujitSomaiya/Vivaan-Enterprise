@@ -13,6 +13,7 @@ import com.vivaanenterprise.app.feature.client.model.ClientValidationUtils
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -207,6 +208,17 @@ private class FakeClientDao : ClientDao {
         return clients.values.filter { it.syncStatus == status }
     }
 
+    override suspend fun getBySyncStatuses(statuses: List<SyncStatus>): List<ClientEntity> {
+        return clients.values.filter { it.syncStatus in statuses }
+    }
+
+    override suspend fun getUnsynced(): List<ClientEntity> {
+        return clients.values.filter { it.syncStatus == SyncStatus.PENDING || it.syncStatus == SyncStatus.FAILED }
+    }
+
+    override fun observeUnsyncedCount(): Flow<Int> = flowOf(0)
+    override fun observeFailedCount(): Flow<Int> = flowOf(0)
+
     override suspend fun softDelete(id: String, deletedAt: Long, updatedAt: Long, syncStatus: SyncStatus) {
         clients[id]?.let { existing ->
             clients[id] = existing.copy(
@@ -224,10 +236,13 @@ private class FakeSyncScheduler : SyncScheduler {
     var enqueueCount = 0
     var shouldFail = false
 
-    override fun enqueueSync() {
+    override fun enqueueSync(forceImmediate: Boolean) {
         enqueueCount++
         if (shouldFail) {
             throw RuntimeException("WorkManager queue failed")
         }
     }
+
+    override fun schedulePeriodicSync() {}
+    override fun cancelSync() {}
 }

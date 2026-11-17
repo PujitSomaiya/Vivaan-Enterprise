@@ -18,6 +18,18 @@ interface ClientAccountEntryDao {
     @Query("SELECT * FROM client_account_entries WHERE syncStatus = :status")
     suspend fun getBySyncStatus(status: SyncStatus): List<ClientAccountEntryEntity>
 
+    @Query("SELECT * FROM client_account_entries WHERE syncStatus IN (:statuses)")
+    suspend fun getBySyncStatuses(statuses: List<SyncStatus>): List<ClientAccountEntryEntity>
+
+    @Query("SELECT * FROM client_account_entries WHERE syncStatus IN ('PENDING', 'FAILED')")
+    suspend fun getUnsynced(): List<ClientAccountEntryEntity>
+
+    @Query("SELECT COUNT(*) FROM client_account_entries WHERE syncStatus IN ('PENDING', 'FAILED')")
+    fun observeUnsyncedCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM client_account_entries WHERE syncStatus = 'FAILED'")
+    fun observeFailedCount(): Flow<Int>
+
     @Query("SELECT * FROM client_account_entries WHERE documentId = :documentId AND isDeleted = 0 LIMIT 1")
     suspend fun findByDocumentId(documentId: String): ClientAccountEntryEntity?
 
