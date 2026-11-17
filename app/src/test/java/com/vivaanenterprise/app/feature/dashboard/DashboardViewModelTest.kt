@@ -1,9 +1,12 @@
 package com.vivaanenterprise.app.feature.dashboard
 
+import com.vivaanenterprise.app.core.sync.SyncScheduler
 import com.vivaanenterprise.app.domain.model.ClientAccountEntry
 import com.vivaanenterprise.app.domain.model.ClientAccountSummary
 import com.vivaanenterprise.app.domain.model.DashboardSummary
 import com.vivaanenterprise.app.domain.repository.ClientAccountRepository
+import com.vivaanenterprise.app.domain.repository.SyncRepository
+import com.vivaanenterprise.app.domain.repository.SyncStatusSummary
 import com.vivaanenterprise.app.feature.dashboard.presentation.DashboardViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -17,6 +20,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -24,10 +28,14 @@ import org.junit.Test
 class DashboardViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
+    private lateinit var fakeSyncRepository: FakeSyncRepo
+    private lateinit var fakeSyncScheduler: FakeDashboardSyncScheduler
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
+        fakeSyncRepository = FakeSyncRepo()
+        fakeSyncScheduler = FakeDashboardSyncScheduler()
     }
 
     @After
@@ -38,7 +46,7 @@ class DashboardViewModelTest {
     @Test
     fun load_initialZeroState_emitsZeroSummary() = runTest {
         val repo = FakeClientAccountRepo(DashboardSummary(finalizedInvoiceCount = 0, totalBilledPaise = 0L))
-        val viewModel = DashboardViewModel(repo)
+        val viewModel = DashboardViewModel(repo, fakeSyncRepository, fakeSyncScheduler)
         testDispatcher.scheduler.advanceUntilIdle()
 
         val state = viewModel.uiState.value
@@ -51,7 +59,7 @@ class DashboardViewModelTest {
     @Test
     fun load_populatedSummary_emitsCorrectTotals() = runTest {
         val repo = FakeClientAccountRepo(DashboardSummary(finalizedInvoiceCount = 5, totalBilledPaise = 12500000L))
-        val viewModel = DashboardViewModel(repo)
+        val viewModel = DashboardViewModel(repo, fakeSyncRepository, fakeSyncScheduler)
         testDispatcher.scheduler.advanceUntilIdle()
 
         val state = viewModel.uiState.value
@@ -64,7 +72,7 @@ class DashboardViewModelTest {
     @Test
     fun reactiveUpdate_updatesDashboardSummaryAutomatically() = runTest {
         val repo = FakeClientAccountRepo(DashboardSummary(finalizedInvoiceCount = 1, totalBilledPaise = 250000L))
-        val viewModel = DashboardViewModel(repo)
+        val viewModel = DashboardViewModel(repo, fakeSyncRepository, fakeSyncScheduler)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(1, viewModel.uiState.value.summary.finalizedInvoiceCount)
@@ -76,10 +84,55 @@ class DashboardViewModelTest {
         assertEquals(500000L, viewModel.uiState.value.summary.totalBilledPaise)
     }
 
+    @Test
+    fun syncNowClick_triggersImmediateSyncSchedulerEnqueue() = runTest {
+        val repo = FakeClientAccountRepo(DashboardSummary(finalizedInvoiceCount = 0, totalBilledPaise = 0L))
+        val viewModel = DashboardViewModel(repo, fakeSyncRepository, fakeSyncScheduler)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onSyncNowClick()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(1, fakeSyncScheduler.enqueueCount)
+        assertTrue(fakeSyncScheduler.lastForceImmediate)
+    }
+
+    @Test
+    fun syncDiagnostics_openAndDismiss_updatesUiState() = runTest {
+        val repo = FakeClientAccountRepo(DashboardSummary(finalizedInvoiceCount = 0, totalBilledPaise = 0L))
+        val viewModel = DashboardViewModel(repo, fakeSyncRepository, fakeSyncScheduler)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.showSyncDiagnosticsDialog)
+
+        viewModel.onShowSyncDiagnostics()
+        assertTrue(viewModel.uiState.value.showSyncDiagnosticsDialog)
+
+        viewModel.onDismissSyncDiagnostics()
+        assertFalse(viewModel.uiState.value.showSyncDiagnosticsDialog)
+    }
+
     private class FakeClientAccountRepo(initialSummary: DashboardSummary) : ClientAccountRepository {
         val dashboardFlow = MutableStateFlow(initialSummary)
         override fun observeAccountEntriesForClient(clientId: String): Flow<List<ClientAccountEntry>> = MutableStateFlow(emptyList())
         override fun observeAccountSummaryForClient(clientId: String): Flow<ClientAccountSummary> = MutableStateFlow(ClientAccountSummary(0, 0L))
         override fun observeDashboardSummary(): Flow<DashboardSummary> = dashboardFlow
+    }
+
+    private class FakeSyncRepo : SyncRepository {
+        val syncStatusFlow = MutableStateFlow(SyncStatusSummary(lastSyncStatus = "SUCCESS"))
+        override suspend fun synchronize(): Result<Unit> = Result.success(Unit)
+        override fun observeSyncStatus(): Flow<SyncStatusSummary> = syncStatusFlow
+    }
+
+    private class FakeDashboardSyncScheduler : SyncScheduler {
+        var enqueueCount = 0
+        var lastForceImmediate = false
+        override fun enqueueSync(forceImmediate: Boolean) {
+            enqueueCount++
+            lastForceImmediate = forceImmediate
+        }
+        override fun schedulePeriodicSync() {}
+        override fun cancelSync() {}
     }
 }
