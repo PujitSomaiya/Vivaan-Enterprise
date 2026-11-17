@@ -1,5 +1,6 @@
 package com.vivaanenterprise.app.feature.dashboard.presentation
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -36,8 +37,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vivaanenterprise.app.R
@@ -202,29 +205,7 @@ fun DashboardScreen(
             verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.md)
         ) {
             // Hero Brand & Welcome Card
-            AppCard(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(AppTheme.spacing.md),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    VeLogo(size = AppTheme.sizing.logoMedium)
-                    Spacer(modifier = Modifier.height(AppTheme.spacing.sm))
-                    Text(
-                        text = stringResource(R.string.dashboard_welcome),
-                        style = AppTheme.typography.headlineSmall,
-                        color = AppTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(AppTheme.spacing.xxs))
-                    Text(
-                        text = stringResource(R.string.dashboard_subtitle),
-                        style = AppTheme.typography.bodyMedium,
-                        color = AppTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+            DashboardHeroCard()
 
             // Sync Status Banner Card
             DashboardSyncStatusCard(
@@ -481,6 +462,60 @@ private data class Tuple4<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)
 private fun formatTimestamp(timestamp: Long): String {
     val sdf = SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault())
     return sdf.format(Date(timestamp))
+}
+
+@Composable
+private fun DashboardHeroCard(
+    modifier: Modifier = Modifier
+) {
+    AppCard(modifier = modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = AppTheme.spacing.sm, horizontal = AppTheme.spacing.xs),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            VeLogo(
+                size = 76.dp,
+                primaryColor = AppTheme.colorScheme.primary,
+                accentColor = AppTheme.colorScheme.secondary
+            )
+
+            Spacer(modifier = Modifier.height(AppTheme.spacing.md))
+
+            Text(
+                text = stringResource(R.string.dashboard_welcome),
+                style = AppTheme.typography.headlineMedium.copy(
+                    fontSize = 24.sp,
+                    lineHeight = 32.sp,
+                    letterSpacing = 0.2.sp
+                ),
+                color = AppTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(AppTheme.spacing.sm))
+
+            Surface(
+                shape = AppTheme.shapes.extraLarge,
+                color = AppTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                border = BorderStroke(1.dp, AppTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            ) {
+                Text(
+                    text = stringResource(R.string.dashboard_subtitle),
+                    style = AppTheme.typography.labelMedium,
+                    color = AppTheme.colorScheme.onPrimaryContainer,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(
+                        horizontal = AppTheme.spacing.md,
+                        vertical = 6.dp
+                    )
+                )
+            }
+        }
+    }
 }
 
 @Composable
