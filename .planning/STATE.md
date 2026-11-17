@@ -2,15 +2,15 @@
 
 ## Current Position
 - **Active Milestone**: Milestone 2: Production Hardening & Sync Engine Recovery
-- **Active Phase**: Phase 19 (Firestore Sync Outage Recovery & UI Hardening) — COMPLETED
+- **Active Phase**: Phase 20 (Bidirectional Multi-Device Sync Engine) — READY TO PLAN & EXECUTE
 - **Active Branch**: `bug/sync-ui-issue-17-nov-2026`
-- **Current Status**: Phase 19 executed and verified across all tests, lint, debug, and release builds.
+- **Current Status**: Phase 19 completed. Phase 20 (Bidirectional Multi-Device Sync) and Phase 21 (Compose UI Refactoring & Code De-duplication) added to roadmap.
 
-## Diagnosed Root Cause (Sync Breakdown after Rule Expiration)
-1. **Permanent `FAILED` State**: When Firebase rules expired, entity push failed. Catch blocks set `syncStatus = SyncStatus.FAILED`. However, `SyncRepositoryImpl.synchronize()` strictly queries `getBySyncStatus(SyncStatus.PENDING)`. All failed entities are permanently orphaned and never retried even after rules are fixed on the backend.
-2. **Conflict Engine Lockdown**: `SyncMergePolicy` protects local entities with `SyncStatus.FAILED` (`REJECT_REMOTE_PROTECT_LOCAL`), locking them against remote reconciliations.
-3. **No Background Periodic Sync**: WorkManager only schedules one-time requests upon startup and write operations.
-4. **No Manual Sync / Diagnostic Trigger**: The UI lacks a "Sync Now" / "Retry" action and error display to recover stuck records or give feedback.
+## Diagnosed Root Cause (Bidirectional Sync & Multi-Device Gap)
+1. **Clock Skew & Brittle Timestamp Cursor**: Remote pull queries currently filter by `whereGreaterThanOrEqualTo("updatedAt", lastSyncTime)`. In a multi-device setup, differences between device system clocks or delayed synchronization cause remote documents to have timestamps earlier than the receiving device's `lastSyncTime`, permanently hiding them from Firestore pull results.
+2. **Missing Outbound Sequence Push**: `DocumentSequence` is never pushed in Step 1 of `SyncRepositoryImpl`, causing different devices to diverge in sequence numbering.
+3. **Foreign Key Ingestion Safety**: If parents (Client, Document) are missing or fail during pull, child records (LineItems, ClientAccountEntries) are either dropped or trigger SQLite foreign key failures.
+4. **UI Duplication**: Substantial nested composable code is duplicated across `InvoiceScreen`, `PurchaseOrderScreen`, `ClientListScreen`, `DocumentsScreen`, and detail screens.
 
 ## Key Decisions
 - [DEC-001] Room database is the sole local source of truth for the UI; Firestore is never directly observed.
@@ -18,6 +18,8 @@
 - [DEC-003] Finalized invoices/purchase orders freeze master entity snapshots to preserve historical immutability.
 - [DEC-004] PDFs are generated dynamically on demand using native Android APIs without third-party PDF dependencies.
 - [DEC-005] Entities in `SyncStatus.FAILED` must automatically be retried by the sync engine upon subsequent sync triggers or manual retries.
+- [DEC-006] Inbound sync must use a safe lookback window and full reconciliation support so multi-device clock skews never drop records.
+- [DEC-007] Shared UI patterns across Invoice, PO, and List/Detail screens must be extracted into focused, reusable components.
 
 ## Next Action
-- Ready to test on physical devices or proceed to Phase 20 (Performance & Recomposition Audit) via `/gsd-progress`.
+- Execute planning for Phase 20 via `/gsd-plan-phase 20` to fix inbound/outbound sync across devices.
