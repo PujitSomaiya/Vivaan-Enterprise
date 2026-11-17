@@ -1,25 +1,23 @@
 # Project State: Vivaan Enterprise
 
 ## Current Position
-- **Active Milestone**: Milestone 2: Production Hardening & Sync UI Stability
-- **Active Phase**: Phase 19 (Sync UI & State Indicator Hardening)
+- **Active Milestone**: Milestone 2: Production Hardening & Sync Engine Recovery
+- **Active Phase**: Phase 19 (Firestore Sync Outage Recovery & UI Hardening)
 - **Active Branch**: `bug/sync-ui-issue-17-nov-2026`
-- **Current Status**: Onboarding complete. Codebase fully mapped with 7 evidence-backed documents in `.planning/codebase/`. Planning infrastructure initialized.
+- **Current Status**: Root cause diagnosed for multi-device sync breakdown following expired Firebase security rules. Phase 19 scoped with engine auto-recovery, periodic sync, and manual sync UI.
 
-## Codebase Map Summary
-- **Architecture**: MVI / UDF pattern with Room as local source of truth, WorkManager sync to Cloud Firestore, native PDF generation.
-- **Tech Stack**: Kotlin 2.3.10, Jetpack Compose, Material 3, Room, Hilt, AGP 9.4.0, targetSdk 37.
-- **Quality & Conventions**: Integer minor unit `Long` paise for financial math, no `Double`/`Float` money calculations, strict coroutine cancellation handling, stateless Compose screens.
-- **Concerns Identified**: Firestore DTO ProGuard reflection rules in release, WorkManager retry exponential backoff tuning, single-page PDF overflow risk on large document line counts.
+## Diagnosed Root Cause (Sync Breakdown after Rule Expiration)
+1. **Permanent `FAILED` State**: When Firebase rules expired, entity push failed. Catch blocks set `syncStatus = SyncStatus.FAILED`. However, `SyncRepositoryImpl.synchronize()` strictly queries `getBySyncStatus(SyncStatus.PENDING)`. All failed entities are permanently orphaned and never retried even after rules are fixed on the backend.
+2. **Conflict Engine Lockdown**: `SyncMergePolicy` protects local entities with `SyncStatus.FAILED` (`REJECT_REMOTE_PROTECT_LOCAL`), locking them against remote reconciliations.
+3. **No Background Periodic Sync**: WorkManager only schedules one-time requests upon startup and write operations.
+4. **No Manual Sync / Diagnostic Trigger**: The UI lacks a "Sync Now" / "Retry" action and error display to recover stuck records or give feedback.
 
 ## Key Decisions
 - [DEC-001] Room database is the sole local source of truth for the UI; Firestore is never directly observed.
 - [DEC-002] Financial calculations are performed strictly in integer paise (`Long`) by `DocumentCalculator`.
 - [DEC-003] Finalized invoices/purchase orders freeze master entity snapshots to preserve historical immutability.
 - [DEC-004] PDFs are generated dynamically on demand using native Android APIs without third-party PDF dependencies.
-
-## Blockers
-- None currently blocking.
+- [DEC-005] Entities in `SyncStatus.FAILED` must automatically be retried by the sync engine upon subsequent sync triggers or manual retries.
 
 ## Next Action
-- Inspect or address the active sync UI issue on branch `bug/sync-ui-issue-17-nov-2026` via `/gsd-plan-phase 19` or `/gsd-progress`.
+- Run `/gsd-plan-phase 19` to produce the execution plan (`PLAN.md`) and implement the fix.
