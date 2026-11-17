@@ -35,6 +35,7 @@ import com.vivaanenterprise.app.R
 import com.vivaanenterprise.app.core.common.DocumentStatus
 import com.vivaanenterprise.app.core.common.DocumentType
 import com.vivaanenterprise.app.core.designsystem.component.AppCard
+import com.vivaanenterprise.app.core.designsystem.component.AppConfirmationDialog
 import com.vivaanenterprise.app.core.designsystem.component.AppErrorState
 import com.vivaanenterprise.app.core.designsystem.component.AppLoadingState
 import com.vivaanenterprise.app.core.designsystem.component.AppPrimaryButton
@@ -101,29 +102,14 @@ fun DocumentDetailScreen(
             stringResource(R.string.delete_finalized_dialog_message)
         }
 
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { if (!uiState.isDeleting) onDeleteDismissed() },
-            title = { Text(text = dialogTitle) },
-            text = { Text(text = dialogMessage) },
-            confirmButton = {
-                androidx.compose.material3.TextButton(
-                    onClick = onDeleteConfirmed,
-                    enabled = !uiState.isDeleting
-                ) {
-                    Text(
-                        text = stringResource(R.string.delete_action),
-                        color = AppTheme.colorScheme.error
-                    )
-                }
-            },
-            dismissButton = {
-                androidx.compose.material3.TextButton(
-                    onClick = onDeleteDismissed,
-                    enabled = !uiState.isDeleting
-                ) {
-                    Text(text = stringResource(R.string.cancel_action))
-                }
-            }
+        AppConfirmationDialog(
+            title = dialogTitle,
+            message = dialogMessage,
+            confirmLabel = stringResource(R.string.delete_action),
+            cancelLabel = stringResource(R.string.cancel_action),
+            isDestructive = true,
+            onConfirm = onDeleteConfirmed,
+            onDismiss = { if (!uiState.isDeleting) onDeleteDismissed() }
         )
     }
 

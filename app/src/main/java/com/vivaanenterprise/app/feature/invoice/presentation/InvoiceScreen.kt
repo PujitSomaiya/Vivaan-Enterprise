@@ -1,65 +1,43 @@
 package com.vivaanenterprise.app.feature.invoice.presentation
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.foundation.lazy.rememberLazyListState
-import com.vivaanenterprise.app.R
+import com.vivaanenterprise.app.core.designsystem.component.AppConfirmationDialog
+import com.vivaanenterprise.app.core.designsystem.component.AppDatePickerDialog
 import com.vivaanenterprise.app.core.designsystem.component.AppErrorDialog
 import com.vivaanenterprise.app.core.designsystem.component.AppErrorState
 import com.vivaanenterprise.app.core.designsystem.component.AppLoadingState
-import com.vivaanenterprise.app.core.designsystem.component.AppPrimaryButton
 import com.vivaanenterprise.app.core.designsystem.component.AppScaffold
-import com.vivaanenterprise.app.core.designsystem.component.AppSecondaryButton
-import com.vivaanenterprise.app.core.designsystem.component.AppSectionHeader
 import com.vivaanenterprise.app.core.designsystem.component.AppTextField
 import com.vivaanenterprise.app.core.designsystem.component.AppTopBar
 import com.vivaanenterprise.app.core.designsystem.theme.AppTheme
 import com.vivaanenterprise.app.core.designsystem.theme.VivaanEnterpriseTheme
-import com.vivaanenterprise.app.domain.model.IndianState
 import com.vivaanenterprise.app.feature.document.presentation.components.ClientSelectorBottomSheet
 import com.vivaanenterprise.app.feature.document.presentation.components.DocumentAdditionalDetailsSection
 import com.vivaanenterprise.app.feature.document.presentation.components.DocumentCalculationSummary
+import com.vivaanenterprise.app.feature.document.presentation.components.DocumentFormActionButtons
+import com.vivaanenterprise.app.feature.document.presentation.components.DocumentHeaderSection
 import com.vivaanenterprise.app.feature.document.presentation.components.DocumentLineItemCard
+import com.vivaanenterprise.app.feature.document.presentation.components.DocumentLineItemsHeader
 import com.vivaanenterprise.app.feature.document.presentation.components.PlaceOfSupplyBottomSheet
-import com.vivaanenterprise.app.feature.purchaseorder.presentation.PurchaseOrderUiIntent
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @Composable
 fun InvoiceRoute(
@@ -162,67 +140,35 @@ fun InvoiceScreen(
     }
 
     if (showDatePicker) {
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = uiState.documentDate
+        AppDatePickerDialog(
+            initialSelectedDateMillis = uiState.documentDate,
+            onDateSelected = { onIntent(InvoiceUiIntent.OnDocumentDateChange(it)) },
+            onDismiss = { showDatePicker = false }
         )
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        datePickerState.selectedDateMillis?.let {
-                            onIntent(InvoiceUiIntent.OnDocumentDateChange(it))
-                        }
-                        showDatePicker = false
-                    }
-                ) { Text(stringResource(R.string.confirm_action)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text(stringResource(R.string.cancel_action))
-                }
-            }
-        ) {
-            DatePicker(state = datePickerState)
-        }
     }
 
     if (uiState.showFinalizeConfirmDialog) {
-        AlertDialog(
-            onDismissRequest = { onIntent(InvoiceUiIntent.OnDismissFinalizeConfirm) },
-            title = { Text("Finalize Tax Invoice") },
-            text = { Text("Are you sure you want to finalize this invoice? Historical invoice records cannot be edited after finalization.") },
-            confirmButton = {
-                TextButton(onClick = { onIntent(InvoiceUiIntent.OnConfirmFinalize) }) {
-                    Text("Finalize")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { onIntent(InvoiceUiIntent.OnDismissFinalizeConfirm) }) {
-                    Text(stringResource(R.string.cancel_action))
-                }
-            }
+        AppConfirmationDialog(
+            title = "Finalize Tax Invoice",
+            message = "Are you sure you want to finalize this invoice? Historical invoice records cannot be edited after finalization.",
+            confirmLabel = "Finalize",
+            onConfirm = { onIntent(InvoiceUiIntent.OnConfirmFinalize) },
+            onDismiss = { onIntent(InvoiceUiIntent.OnDismissFinalizeConfirm) }
         )
     }
 
     if (showDiscardDialog) {
-        AlertDialog(
-            onDismissRequest = { showDiscardDialog = false },
-            title = { Text("Discard Unsaved Changes?") },
-            text = { Text("You have unsaved changes in this invoice. Are you sure you want to leave?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    showDiscardDialog = false
-                    onNavigateBack()
-                }) {
-                    Text("Discard")
-                }
+        AppConfirmationDialog(
+            title = "Discard Unsaved Changes?",
+            message = "You have unsaved changes in this invoice. Are you sure you want to leave?",
+            confirmLabel = "Discard",
+            cancelLabel = "Continue Editing",
+            isDestructive = true,
+            onConfirm = {
+                showDiscardDialog = false
+                onNavigateBack()
             },
-            dismissButton = {
-                TextButton(onClick = { showDiscardDialog = false }) {
-                    Text("Continue Editing")
-                }
-            }
+            onDismiss = { showDiscardDialog = false }
         )
     }
 
@@ -265,111 +211,30 @@ fun InvoiceScreen(
                     verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.md)
                 ) {
                     item {
-                        Spacer(modifier = Modifier.height(AppTheme.spacing.xs))
-                        AppSectionHeader(title = "Header Information")
-
-                        Spacer(modifier = Modifier.height(AppTheme.spacing.xs))
-
-                        // Document Number
-                        AppTextField(
-                            value = uiState.documentNumber,
-                            onValueChange = { onIntent(InvoiceUiIntent.OnDocumentNumberChange(it)) },
-                            label = "Invoice Number *",
-                            errorText = uiState.documentNumberError,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        Spacer(modifier = Modifier.height(AppTheme.spacing.sm))
-
-                        // Document Date
-                        val formattedDate = remember(uiState.documentDate) {
-                            SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(uiState.documentDate))
-                        }
-                        AppTextField(
-                            value = formattedDate,
-                            onValueChange = {},
-                            label = "Invoice Date *",
-                            onClick = { showDatePicker = true },
-                            trailingIcon = {
-                                Text(
-                                    text = "Change",
-                                    style = AppTheme.typography.labelMedium,
-                                    color = AppTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(end = AppTheme.spacing.xs)
-                                )
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        Spacer(modifier = Modifier.height(AppTheme.spacing.sm))
-
-                        // Client Picker
-                        AppTextField(
-                            value = uiState.selectedClient?.companyName ?: "",
-                            onValueChange = {},
-                            label = "Client *",
-                            onClick = { showClientSheet = true },
-                            errorText = uiState.clientError,
-                            trailingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.KeyboardArrowDown,
-                                    contentDescription = "Select Client"
-                                )
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        Spacer(modifier = Modifier.height(AppTheme.spacing.sm))
-
-                        // Delivery / Factory Address
-                        AppTextField(
-                            value = uiState.deliveryFactoryAddress,
-                            onValueChange = { onIntent(InvoiceUiIntent.OnDeliveryFactoryAddressChange(it)) },
-                            label = "Delivery / Factory Address",
-                            errorText = uiState.deliveryFactoryAddressError,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        Spacer(modifier = Modifier.height(AppTheme.spacing.sm))
-
-                        // Place of Supply Picker
-                        val posState = remember(uiState.placeOfSupplyStateCode) {
-                            IndianState.findByCode(uiState.placeOfSupplyStateCode)
-                        }
-                        val posDisplayText = posState?.displayName ?: "State Code: ${uiState.placeOfSupplyStateCode}"
-
-                        AppTextField(
-                            value = posDisplayText,
-                            onValueChange = {},
-                            label = "Place of Supply *",
-                            onClick = { showPlaceOfSupplySheet = true },
-                            errorText = uiState.placeOfSupplyError,
-                            trailingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.KeyboardArrowDown,
-                                    contentDescription = "Select Place of Supply"
-                                )
-                            },
-                            modifier = Modifier.fillMaxWidth()
+                        DocumentHeaderSection(
+                            documentNumber = uiState.documentNumber,
+                            onDocumentNumberChange = { onIntent(InvoiceUiIntent.OnDocumentNumberChange(it)) },
+                            documentNumberLabel = "Invoice Number *",
+                            documentNumberError = uiState.documentNumberError,
+                            documentDate = uiState.documentDate,
+                            onDateClick = { showDatePicker = true },
+                            dateLabel = "Invoice Date *",
+                            selectedClientName = uiState.selectedClient?.companyName ?: "",
+                            onClientClick = { showClientSheet = true },
+                            clientLabel = "Client *",
+                            clientError = uiState.clientError,
+                            deliveryFactoryAddress = uiState.deliveryFactoryAddress,
+                            onDeliveryFactoryAddressChange = { onIntent(InvoiceUiIntent.OnDeliveryFactoryAddressChange(it)) },
+                            deliveryFactoryAddressError = uiState.deliveryFactoryAddressError,
+                            placeOfSupplyStateCode = uiState.placeOfSupplyStateCode,
+                            onPlaceOfSupplyClick = { showPlaceOfSupplySheet = true },
+                            placeOfSupplyError = uiState.placeOfSupplyError
                         )
                     }
 
                     // Line Items Section Header
                     item {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            Box(modifier = Modifier.weight(1f)) {
-                                AppSectionHeader(title = "Line Items")
-                            }
-                            TextButton(onClick = { onIntent(InvoiceUiIntent.OnAddLineItem) }) {
-                                Icon(imageVector = Icons.Default.Add, contentDescription = null)
-                                Spacer(modifier = Modifier.padding(horizontal = AppTheme.spacing.xxs))
-                                Text(text = "Add Item")
-                            }
-                        }
+                        DocumentLineItemsHeader(onAddLineItem = { onIntent(InvoiceUiIntent.OnAddLineItem) })
                     }
 
                     // Line Items List
@@ -461,30 +326,13 @@ fun InvoiceScreen(
 
                     // Action Buttons (Save Draft & Finalize)
                     item {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = AppTheme.spacing.md),
-                            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)
-                        ) {
-                            AppPrimaryButton(
-                                text = "Finalize Invoice",
-                                onClick = { onIntent(InvoiceUiIntent.OnRequestFinalize) },
-                                isLoading = uiState.isFinalizing,
-                                enabled = !uiState.isSavingDraft && !uiState.isFinalizing,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-
-                            AppSecondaryButton(
-                                text = "Save Draft",
-                                onClick = { onIntent(InvoiceUiIntent.OnSaveDraft) },
-                                isLoading = uiState.isSavingDraft,
-                                enabled = !uiState.isSavingDraft && !uiState.isFinalizing,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-
-                            Spacer(modifier = Modifier.height(AppTheme.spacing.lg))
-                        }
+                        DocumentFormActionButtons(
+                            primaryButtonText = "Finalize Invoice",
+                            onRequestFinalize = { onIntent(InvoiceUiIntent.OnRequestFinalize) },
+                            onSaveDraft = { onIntent(InvoiceUiIntent.OnSaveDraft) },
+                            isFinalizing = uiState.isFinalizing,
+                            isSavingDraft = uiState.isSavingDraft
+                        )
                     }
                 }
             }

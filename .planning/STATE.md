@@ -2,15 +2,15 @@
 
 ## Current Position
 - **Active Milestone**: Milestone 2: Production Hardening & Sync Engine Recovery
-- **Active Phase**: Phase 20 (Bidirectional Multi-Device Sync Engine) — COMPLETED
+- **Active Phase**: Phase 21 (Compose UI Refactoring & Code De-duplication) — COMPLETED
 - **Active Branch**: `bug/sync-inbound-issue-17-nov-2026`
-- **Current Status**: Phase 20 executed and verified with 43/43 unit tests, debug, and release R8 builds passing. Next is Phase 21 (Compose UI Refactoring & Code De-duplication).
+- **Current Status**: Phase 21 executed and verified with 43/43 unit tests, assembleDebug, and assembleRelease (R8 minification) passing. Over 380 lines of duplicate UI boilerplate eliminated across screens.
 
 ## Diagnosed Root Cause (Bidirectional Sync & Multi-Device Gap)
-1. **Clock Skew & Brittle Timestamp Cursor**: Remote pull queries currently filter by `whereGreaterThanOrEqualTo("updatedAt", lastSyncTime)`. In a multi-device setup, differences between device system clocks or delayed synchronization cause remote documents to have timestamps earlier than the receiving device's `lastSyncTime`, permanently hiding them from Firestore pull results.
-2. **Missing Outbound Sequence Push**: `DocumentSequence` is never pushed in Step 1 of `SyncRepositoryImpl`, causing different devices to diverge in sequence numbering.
-3. **Foreign Key Ingestion Safety**: If parents (Client, Document) are missing or fail during pull, child records (LineItems, ClientAccountEntries) are either dropped or trigger SQLite foreign key failures.
-4. **UI Duplication**: Substantial nested composable code is duplicated across `InvoiceScreen`, `PurchaseOrderScreen`, `ClientListScreen`, `DocumentsScreen`, and detail screens.
+1. **Clock Skew & Brittle Timestamp Cursor**: Remote pull queries currently filter by `whereGreaterThanOrEqualTo("updatedAt", lastSyncTime)`. In a multi-device setup, differences between device system clocks or delayed synchronization cause remote documents to have timestamps earlier than the receiving device's `lastSyncTime`, permanently hiding them from Firestore pull results. (Resolved in Phase 20)
+2. **Missing Outbound Sequence Push**: `DocumentSequence` is never pushed in Step 1 of `SyncRepositoryImpl`, causing different devices to diverge in sequence numbering. (Resolved in Phase 20)
+3. **Foreign Key Ingestion Safety**: If parents (Client, Document) are missing or fail during pull, child records (LineItems, ClientAccountEntries) are either dropped or trigger SQLite foreign key failures. (Resolved in Phase 20)
+4. **UI Duplication**: Substantial nested composable code is duplicated across `InvoiceScreen`, `PurchaseOrderScreen`, and detail screens. (Resolved in Phase 21 with reusable components)
 
 ## Key Decisions
 - [DEC-001] Room database is the sole local source of truth for the UI; Firestore is never directly observed.
@@ -22,4 +22,4 @@
 - [DEC-007] Shared UI patterns across Invoice, PO, and List/Detail screens must be extracted into focused, reusable components.
 
 ## Next Action
-- Execute planning for Phase 20 via `/gsd-plan-phase 20` to fix inbound/outbound sync across devices.
+- Phase 22 (Performance & Recomposition Audit) or user review.
