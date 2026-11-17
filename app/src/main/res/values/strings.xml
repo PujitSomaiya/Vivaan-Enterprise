@@ -167,17 +167,18 @@
     <!-- Sync Feature String Resources -->
     <string name="sync_action_now">Sync Now</string>
     <string name="sync_status_synced">All data synced</string>
-    <string name="sync_status_syncing">Syncing changes with Cloud Firestore…</string>
+    <string name="sync_status_syncing">Syncing changes…</string>
     <string name="sync_status_pending">%1$d offline changes pending sync</string>
-    <string name="sync_status_failed">Sync issue detected (%1$d failed)</string>
-    <string name="sync_diagnostics_title">Sync Diagnostics</string>
+    <string name="sync_status_failed">%1$d items could not sync</string>
+    <string name="sync_diagnostics_title">Sync Details</string>
     <string name="sync_diagnostics_status">Status: %1$s</string>
-    <string name="sync_diagnostics_last_sync">Last successful sync: %1$s</string>
-    <string name="sync_diagnostics_last_attempt">Last sync attempt: %1$s</string>
-    <string name="sync_diagnostics_unsynced_items">Total unsynced items: %1$d</string>
-    <string name="sync_diagnostics_failed_items">Failed items: %1$d</string>
-    <string name="sync_diagnostics_error">Last Error: %1$s</string>
+    <string name="sync_diagnostics_last_sync">Last synced: %1$s</string>
+    <string name="sync_diagnostics_last_attempt">Last checked: %1$s</string>
+    <string name="sync_diagnostics_unsynced_items">Pending items: %1$d</string>
+    <string name="sync_diagnostics_failed_items">Unsynced items: %1$d</string>
+    <string name="sync_diagnostics_error">Note: %1$s</string>
     <string name="sync_diagnostics_never">Never</string>
     <string name="sync_details_action">View Details</string>
+    <string name="close_action">Close</string>
 </resources>
 

@@ -409,8 +409,13 @@ private fun SyncDiagnosticsDialog(
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs)) {
+                val statusText = when (syncSummary.lastSyncStatus) {
+                    "SUCCESS" -> "Up to date"
+                    "FAILED" -> "Needs attention"
+                    else -> "Ready"
+                }
                 Text(
-                    text = stringResource(R.string.sync_diagnostics_status, syncSummary.lastSyncStatus),
+                    text = stringResource(R.string.sync_diagnostics_status, statusText),
                     style = AppTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -428,19 +433,30 @@ private fun SyncDiagnosticsDialog(
                     ),
                     style = AppTheme.typography.bodySmall
                 )
-                Text(
-                    text = stringResource(R.string.sync_diagnostics_unsynced_items, syncSummary.unsyncedCount),
-                    style = AppTheme.typography.bodySmall
-                )
-                Text(
-                    text = stringResource(R.string.sync_diagnostics_failed_items, syncSummary.failedCount),
-                    style = AppTheme.typography.bodySmall,
-                    color = if (syncSummary.failedCount > 0) AppTheme.colorScheme.error else AppTheme.colorScheme.onSurface
-                )
+                if (syncSummary.unsyncedCount > 0) {
+                    Text(
+                        text = stringResource(R.string.sync_diagnostics_unsynced_items, syncSummary.unsyncedCount),
+                        style = AppTheme.typography.bodySmall
+                    )
+                }
+                if (syncSummary.failedCount > 0) {
+                    Text(
+                        text = stringResource(R.string.sync_diagnostics_failed_items, syncSummary.failedCount),
+                        style = AppTheme.typography.bodySmall,
+                        color = AppTheme.colorScheme.error
+                    )
+                }
                 if (!syncSummary.lastSyncError.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(AppTheme.spacing.xxs))
+                    val friendlyError = when {
+                        syncSummary.lastSyncError.contains("PERMISSION_DENIED", ignoreCase = true) ->
+                            "Access permission error. Please verify your connection or sign in again."
+                        syncSummary.lastSyncError.contains("network", ignoreCase = true) || syncSummary.lastSyncError.contains("unable to resolve", ignoreCase = true) ->
+                            "Network connection interrupted. Changes are saved safely offline and will sync once reconnected."
+                        else -> syncSummary.lastSyncError
+                    }
                     Text(
-                        text = stringResource(R.string.sync_diagnostics_error, syncSummary.lastSyncError),
+                        text = stringResource(R.string.sync_diagnostics_error, friendlyError),
                         style = AppTheme.typography.bodySmall,
                         color = AppTheme.colorScheme.error
                     )
@@ -454,7 +470,7 @@ private fun SyncDiagnosticsDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(text = stringResource(R.string.confirm_action))
+                Text(text = stringResource(R.string.close_action))
             }
         }
     )
