@@ -38,7 +38,7 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isManualSyncing = true) }
             try {
-                syncScheduler.enqueueSync(forceImmediate = true)
+                syncScheduler.enqueueSync(forceImmediate = true, forceReconcile = true)
             } finally {
                 _uiState.update { it.copy(isManualSyncing = false) }
             }

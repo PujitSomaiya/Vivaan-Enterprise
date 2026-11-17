@@ -14,14 +14,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,7 +34,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vivaanenterprise.app.R
 import com.vivaanenterprise.app.core.designsystem.component.AppCard
+import com.vivaanenterprise.app.core.designsystem.component.AppConfirmationDialog
 import com.vivaanenterprise.app.core.designsystem.component.AppEmptyState
+import com.vivaanenterprise.app.core.designsystem.component.AppInfoRow
 import com.vivaanenterprise.app.core.designsystem.component.AppLoadingState
 import com.vivaanenterprise.app.core.designsystem.component.AppPrimaryButton
 import com.vivaanenterprise.app.core.designsystem.component.AppScaffold
@@ -90,20 +90,14 @@ fun ProductDetailScreen(
     val product = uiState.product
 
     if (uiState.showDeleteDialog && product != null) {
-        AlertDialog(
-            onDismissRequest = { onIntent(ProductDetailUiIntent.DismissDeleteDialog) },
-            title = { Text(text = stringResource(R.string.delete_product_dialog_title)) },
-            text = { Text(text = stringResource(R.string.delete_product_dialog_message, product.name)) },
-            confirmButton = {
-                TextButton(onClick = { onIntent(ProductDetailUiIntent.ConfirmDeleteClicked) }) {
-                    Text(text = stringResource(R.string.delete_action), color = AppTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { onIntent(ProductDetailUiIntent.DismissDeleteDialog) }) {
-                    Text(text = stringResource(R.string.cancel_action))
-                }
-            }
+        AppConfirmationDialog(
+            title = stringResource(R.string.delete_product_dialog_title),
+            message = stringResource(R.string.delete_product_dialog_message, product.name),
+            confirmLabel = stringResource(R.string.delete_action),
+            cancelLabel = stringResource(R.string.cancel_action),
+            isDestructive = true,
+            onConfirm = { onIntent(ProductDetailUiIntent.ConfirmDeleteClicked) },
+            onDismiss = { onIntent(ProductDetailUiIntent.DismissDeleteDialog) }
         )
     }
 
@@ -158,16 +152,18 @@ fun ProductDetailScreen(
 
                             Spacer(modifier = Modifier.height(AppTheme.spacing.md))
 
-                            DetailRow(
+                            AppInfoRow(
                                 label = stringResource(R.string.hsn_sac_label),
-                                value = product.hsnSac
+                                value = product.hsnSac,
+                                modifier = Modifier.fillMaxWidth()
                             )
 
                             Spacer(modifier = Modifier.height(AppTheme.spacing.sm))
 
-                            DetailRow(
+                            AppInfoRow(
                                 label = stringResource(R.string.gst_rate_label),
-                                value = "${ProductGstUtils.formatBasisPointsToPercentage(product.defaultGstRateBasisPoints)}%"
+                                value = "${ProductGstUtils.formatBasisPointsToPercentage(product.defaultGstRateBasisPoints)}%",
+                                modifier = Modifier.fillMaxWidth()
                             )
 
                             Spacer(modifier = Modifier.height(AppTheme.spacing.md))
@@ -218,27 +214,6 @@ fun ProductDetailScreen(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun DetailRow(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            text = label,
-            style = AppTheme.typography.bodySmall,
-            color = AppTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(AppTheme.spacing.xxs))
-        Text(
-            text = value,
-            style = AppTheme.typography.bodyLarge,
-            color = AppTheme.colorScheme.onSurface
-        )
     }
 }
 

@@ -14,13 +14,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -37,7 +35,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vivaanenterprise.app.R
 import com.vivaanenterprise.app.core.designsystem.component.AppCard
+import com.vivaanenterprise.app.core.designsystem.component.AppConfirmationDialog
 import com.vivaanenterprise.app.core.designsystem.component.AppEmptyState
+import com.vivaanenterprise.app.core.designsystem.component.AppInfoRow
 import com.vivaanenterprise.app.core.designsystem.component.AppLoadingState
 import com.vivaanenterprise.app.core.designsystem.component.AppPrimaryButton
 import com.vivaanenterprise.app.core.designsystem.component.AppScaffold
@@ -93,32 +93,20 @@ fun ClientDetailScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     if (showDeleteDialog && uiState.client != null) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text(text = stringResource(R.string.delete_client_dialog_title)) },
-            text = {
-                Text(
-                    text = stringResource(
-                        R.string.delete_client_dialog_message,
-                        uiState.client.companyName
-                    )
-                )
+        AppConfirmationDialog(
+            title = stringResource(R.string.delete_client_dialog_title),
+            message = stringResource(
+                R.string.delete_client_dialog_message,
+                uiState.client.companyName
+            ),
+            confirmLabel = stringResource(R.string.delete_action),
+            cancelLabel = stringResource(R.string.cancel_action),
+            isDestructive = true,
+            onConfirm = {
+                showDeleteDialog = false
+                onIntent(ClientDetailUiIntent.ConfirmDeleteClicked)
             },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteDialog = false
-                        onIntent(ClientDetailUiIntent.ConfirmDeleteClicked)
-                    }
-                ) {
-                    Text(text = stringResource(R.string.delete_action), color = AppTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text(text = stringResource(R.string.cancel_action))
-                }
-            }
+            onDismiss = { showDeleteDialog = false }
         )
     }
 
@@ -190,39 +178,39 @@ fun ClientDetailScreen(
                             Spacer(modifier = Modifier.height(AppTheme.spacing.md))
 
                             client.address?.let { address ->
-                                DetailRow(label = stringResource(R.string.address_label), value = address)
+                                AppInfoRow(label = stringResource(R.string.address_label), value = address, modifier = Modifier.padding(vertical = AppTheme.spacing.xs))
                             }
 
                             client.gstin?.let { gstin ->
-                                DetailRow(label = stringResource(R.string.gstin_label), value = gstin)
+                                AppInfoRow(label = stringResource(R.string.gstin_label), value = gstin, modifier = Modifier.padding(vertical = AppTheme.spacing.xs))
                             }
 
                             client.state?.let { state ->
-                                DetailRow(label = stringResource(R.string.state_label), value = state)
+                                AppInfoRow(label = stringResource(R.string.state_label), value = state, modifier = Modifier.padding(vertical = AppTheme.spacing.xs))
                             }
 
                             client.stateCode?.let { stateCode ->
-                                DetailRow(label = stringResource(R.string.state_code_label), value = stateCode)
+                                AppInfoRow(label = stringResource(R.string.state_code_label), value = stateCode, modifier = Modifier.padding(vertical = AppTheme.spacing.xs))
                             }
 
                             client.email?.let { email ->
-                                DetailRow(label = stringResource(R.string.email_label), value = email)
+                                AppInfoRow(label = stringResource(R.string.email_label), value = email, modifier = Modifier.padding(vertical = AppTheme.spacing.xs))
                             }
 
                             client.phone?.let { phone ->
-                                DetailRow(label = stringResource(R.string.phone_label), value = phone)
+                                AppInfoRow(label = stringResource(R.string.phone_label), value = phone, modifier = Modifier.padding(vertical = AppTheme.spacing.xs))
                             }
 
                             client.pan?.let { pan ->
-                                DetailRow(label = stringResource(R.string.pan_label), value = pan)
+                                AppInfoRow(label = stringResource(R.string.pan_label), value = pan, modifier = Modifier.padding(vertical = AppTheme.spacing.xs))
                             }
 
                             client.iec?.let { iec ->
-                                DetailRow(label = stringResource(R.string.iec_label), value = iec)
+                                AppInfoRow(label = stringResource(R.string.iec_label), value = iec, modifier = Modifier.padding(vertical = AppTheme.spacing.xs))
                             }
 
                             client.otherDetails?.let { otherDetails ->
-                                DetailRow(label = stringResource(R.string.other_details_label), value = otherDetails)
+                                AppInfoRow(label = stringResource(R.string.other_details_label), value = otherDetails, modifier = Modifier.padding(vertical = AppTheme.spacing.xs))
                             }
                         }
                     }
@@ -255,26 +243,6 @@ fun ClientDetailScreen(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun DetailRow(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier.padding(vertical = AppTheme.spacing.xs)) {
-        Text(
-            text = label,
-            style = AppTheme.typography.labelMedium,
-            color = AppTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value,
-            style = AppTheme.typography.bodyLarge,
-            color = AppTheme.colorScheme.onSurface
-        )
     }
 }
 

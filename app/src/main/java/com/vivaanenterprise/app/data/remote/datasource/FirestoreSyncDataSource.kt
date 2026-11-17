@@ -76,58 +76,72 @@ open class FirestoreSyncDataSource @Inject constructor(
 
     // Pull methods
     open suspend fun pullBusinessProfilesSince(sinceTimestamp: Long): List<BusinessProfileDto> {
-        return requireFirestore().collection(FirestoreCollections.BUSINESS_PROFILES)
-            .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
-            .get()
-            .await()
-            .toObjects(BusinessProfileDto::class.java)
+        val query = if (sinceTimestamp > 0L) {
+            requireFirestore().collection(FirestoreCollections.BUSINESS_PROFILES)
+                .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
+        } else {
+            requireFirestore().collection(FirestoreCollections.BUSINESS_PROFILES)
+        }
+        return query.get().await().toObjects(BusinessProfileDto::class.java)
     }
 
     open suspend fun pullClientsSince(sinceTimestamp: Long): List<ClientDto> {
-        return requireFirestore().collection(FirestoreCollections.CLIENTS)
-            .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
-            .get()
-            .await()
-            .toObjects(ClientDto::class.java)
+        val query = if (sinceTimestamp > 0L) {
+            requireFirestore().collection(FirestoreCollections.CLIENTS)
+                .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
+        } else {
+            requireFirestore().collection(FirestoreCollections.CLIENTS)
+        }
+        return query.get().await().toObjects(ClientDto::class.java)
     }
 
     open suspend fun pullProductsSince(sinceTimestamp: Long): List<ProductDto> {
-        return requireFirestore().collection(FirestoreCollections.PRODUCTS)
-            .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
-            .get()
-            .await()
-            .toObjects(ProductDto::class.java)
+        val query = if (sinceTimestamp > 0L) {
+            requireFirestore().collection(FirestoreCollections.PRODUCTS)
+                .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
+        } else {
+            requireFirestore().collection(FirestoreCollections.PRODUCTS)
+        }
+        return query.get().await().toObjects(ProductDto::class.java)
     }
 
     open suspend fun pullBusinessDocumentsSince(sinceTimestamp: Long): List<BusinessDocumentDto> {
-        return requireFirestore().collection(FirestoreCollections.DOCUMENTS)
-            .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
-            .get()
-            .await()
-            .toObjects(BusinessDocumentDto::class.java)
+        val query = if (sinceTimestamp > 0L) {
+            requireFirestore().collection(FirestoreCollections.DOCUMENTS)
+                .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
+        } else {
+            requireFirestore().collection(FirestoreCollections.DOCUMENTS)
+        }
+        return query.get().await().toObjects(BusinessDocumentDto::class.java)
     }
 
     open suspend fun pullDocumentLineItemsSince(sinceTimestamp: Long): List<DocumentLineItemDto> {
-        return requireFirestore().collection(FirestoreCollections.DOCUMENT_LINE_ITEMS)
-            .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
-            .get()
-            .await()
-            .toObjects(DocumentLineItemDto::class.java)
+        val query = if (sinceTimestamp > 0L) {
+            requireFirestore().collection(FirestoreCollections.DOCUMENT_LINE_ITEMS)
+                .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
+        } else {
+            requireFirestore().collection(FirestoreCollections.DOCUMENT_LINE_ITEMS)
+        }
+        return query.get().await().toObjects(DocumentLineItemDto::class.java)
     }
 
     open suspend fun pullClientAccountEntriesSince(sinceTimestamp: Long): List<ClientAccountEntryDto> {
-        return requireFirestore().collection(FirestoreCollections.CLIENT_ACCOUNT_ENTRIES)
-            .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
-            .get()
-            .await()
-            .toObjects(ClientAccountEntryDto::class.java)
+        val query = if (sinceTimestamp > 0L) {
+            requireFirestore().collection(FirestoreCollections.CLIENT_ACCOUNT_ENTRIES)
+                .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
+        } else {
+            requireFirestore().collection(FirestoreCollections.CLIENT_ACCOUNT_ENTRIES)
+        }
+        return query.get().await().toObjects(ClientAccountEntryDto::class.java)
     }
 
     open suspend fun pullDocumentSequencesSince(sinceTimestamp: Long): List<DocumentSequenceDto> {
-        return requireFirestore().collection(FirestoreCollections.DOCUMENT_SEQUENCES)
-            .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
-            .get()
-            .await()
-            .toObjects(DocumentSequenceDto::class.java)
+        val query = if (sinceTimestamp > 0L) {
+            requireFirestore().collection(FirestoreCollections.DOCUMENT_SEQUENCES)
+                .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
+        } else {
+            requireFirestore().collection(FirestoreCollections.DOCUMENT_SEQUENCES)
+        }
+        return query.get().await().toObjects(DocumentSequenceDto::class.java)
     }
 }

@@ -198,6 +198,10 @@ private class FakeClientDao : ClientDao {
         return if (client?.isDeleted == false) client else null
     }
 
+    override suspend fun getByIdIncludingDeleted(id: String): ClientEntity? {
+        return clients[id]
+    }
+
     override fun observeById(id: String): Flow<ClientEntity?> {
         return flow.map { list -> list.find { it.id == id } }
     }
@@ -236,7 +240,7 @@ private class FakeSyncScheduler : SyncScheduler {
     var enqueueCount = 0
     var shouldFail = false
 
-    override fun enqueueSync(forceImmediate: Boolean) {
+    override fun enqueueSync(forceImmediate: Boolean, forceReconcile: Boolean) {
         enqueueCount++
         if (shouldFail) {
             throw RuntimeException("WorkManager queue failed")
