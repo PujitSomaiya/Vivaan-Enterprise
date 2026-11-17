@@ -4,7 +4,7 @@
 - **Active Milestone**: Milestone 2: Production Hardening & Sync Engine Recovery
 - **Active Phase**: Phase 19 (Firestore Sync Outage Recovery & UI Hardening)
 - **Active Branch**: `bug/sync-ui-issue-17-nov-2026`
-- **Current Status**: Root cause diagnosed for multi-device sync breakdown following expired Firebase security rules. Phase 19 scoped with engine auto-recovery, periodic sync, and manual sync UI.
+- **Current Status**: Plan created (`.planning/phases/19-sync-outage-recovery/PLAN.md`). Ready for execution.
 
 ## Diagnosed Root Cause (Sync Breakdown after Rule Expiration)
 1. **Permanent `FAILED` State**: When Firebase rules expired, entity push failed. Catch blocks set `syncStatus = SyncStatus.FAILED`. However, `SyncRepositoryImpl.synchronize()` strictly queries `getBySyncStatus(SyncStatus.PENDING)`. All failed entities are permanently orphaned and never retried even after rules are fixed on the backend.
@@ -20,4 +20,4 @@
 - [DEC-005] Entities in `SyncStatus.FAILED` must automatically be retried by the sync engine upon subsequent sync triggers or manual retries.
 
 ## Next Action
-- Run `/gsd-plan-phase 19` to produce the execution plan (`PLAN.md`) and implement the fix.
+- Run `/gsd-execute-phase` (or proceed directly with executing the plan) to implement Phase 19.
