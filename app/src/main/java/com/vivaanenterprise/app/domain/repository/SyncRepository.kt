@@ -13,6 +13,6 @@ data class SyncStatusSummary(
 )
 
 interface SyncRepository {
-    suspend fun synchronize(): Result<Unit>
+    suspend fun synchronize(forceReconcile: Boolean = false): Result<Unit>
     fun observeSyncStatus(): Flow<SyncStatusSummary>
 }

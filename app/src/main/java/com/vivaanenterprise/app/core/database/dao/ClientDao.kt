@@ -15,6 +15,9 @@ interface ClientDao {
     @Query("SELECT * FROM clients WHERE id = :id AND isDeleted = 0")
     suspend fun getById(id: String): ClientEntity?
 
+    @Query("SELECT * FROM clients WHERE id = :id LIMIT 1")
+    suspend fun getByIdIncludingDeleted(id: String): ClientEntity?
+
     @Query("SELECT * FROM clients WHERE id = :id AND isDeleted = 0")
     fun observeById(id: String): Flow<ClientEntity?>
 

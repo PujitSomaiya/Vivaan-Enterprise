@@ -8,13 +8,14 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import androidx.work.workDataOf
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
 interface SyncScheduler {
-    fun enqueueSync(forceImmediate: Boolean = false)
+    fun enqueueSync(forceImmediate: Boolean = false, forceReconcile: Boolean = false)
     fun schedulePeriodicSync()
     fun cancelSync()
 }
@@ -30,14 +31,19 @@ class WorkManagerSyncScheduler @Inject constructor(
         const val PERIODIC_INTERVAL_MINUTES = 15L
     }
 
-    override fun enqueueSync(forceImmediate: Boolean) {
+    override fun enqueueSync(forceImmediate: Boolean, forceReconcile: Boolean) {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
 
-        val syncRequest = OneTimeWorkRequestBuilder<FirebaseSyncWorker>()
+        val syncRequestBuilder = OneTimeWorkRequestBuilder<FirebaseSyncWorker>()
             .setConstraints(constraints)
-            .build()
+
+        if (forceReconcile) {
+            syncRequestBuilder.setInputData(workDataOf(FirebaseSyncWorker.KEY_FORCE_RECONCILE to true))
+        }
+
+        val syncRequest = syncRequestBuilder.build()
 
         val policy = if (forceImmediate) {
             ExistingWorkPolicy.REPLACE

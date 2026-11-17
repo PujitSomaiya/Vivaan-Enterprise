@@ -210,6 +210,7 @@ class SyncRepositoryRecoveryTest {
     private class FakeRecoverySequenceDao : DocumentSequenceDao {
         override suspend fun upsert(sequence: DocumentSequenceEntity) {}
         override suspend fun getSequence(documentType: DocumentType, financialYear: String): DocumentSequenceEntity? = null
+        override suspend fun getAll(): List<DocumentSequenceEntity> = emptyList()
     }
 
     private class FakeRecoveryClientDao : ClientDao {
@@ -220,6 +221,7 @@ class SyncRepositoryRecoveryTest {
         }
 
         override suspend fun getById(id: String): ClientEntity? = clients[id]
+        override suspend fun getByIdIncludingDeleted(id: String): ClientEntity? = clients[id]
         override fun observeById(id: String): Flow<ClientEntity?> = flowOf(clients[id])
         override fun observeActiveClients(): Flow<List<ClientEntity>> = flowOf(clients.values.toList())
         override suspend fun getBySyncStatus(status: SyncStatus): List<ClientEntity> =

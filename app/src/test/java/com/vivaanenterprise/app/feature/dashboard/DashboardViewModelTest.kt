@@ -121,16 +121,18 @@ class DashboardViewModelTest {
 
     private class FakeSyncRepo : SyncRepository {
         val syncStatusFlow = MutableStateFlow(SyncStatusSummary(lastSyncStatus = "SUCCESS"))
-        override suspend fun synchronize(): Result<Unit> = Result.success(Unit)
+        override suspend fun synchronize(forceReconcile: Boolean): Result<Unit> = Result.success(Unit)
         override fun observeSyncStatus(): Flow<SyncStatusSummary> = syncStatusFlow
     }
 
     private class FakeDashboardSyncScheduler : SyncScheduler {
         var enqueueCount = 0
         var lastForceImmediate = false
-        override fun enqueueSync(forceImmediate: Boolean) {
+        var lastForceReconcile = false
+        override fun enqueueSync(forceImmediate: Boolean, forceReconcile: Boolean) {
             enqueueCount++
             lastForceImmediate = forceImmediate
+            lastForceReconcile = forceReconcile
         }
         override fun schedulePeriodicSync() {}
         override fun cancelSync() {}

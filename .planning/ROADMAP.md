@@ -29,9 +29,28 @@
     3. *Manual Sync & Diagnostics UI*: Add a "Sync Now" / "Retry" action and sync status banner/indicator on the Dashboard/Top Bar with feedback on last sync time and error state.
     4. *Diagnostics & Verification*: Provide count/status visibility of pending & failed entities (Clients, Products, Documents, Ledgers); verify end-to-end recovery using unit tests.
   - **Status**: Completed (Verified via `./gradlew testDebugUnitTest`, `./gradlew lintDebug`, `./gradlew assembleDebug`, `./gradlew assembleRelease`)
-- **Phase 20: Performance & Recomposition Audit**
+- **Phase 20: Bidirectional Multi-Device Sync Engine (Inbound/Outbound Consistency & Data Reconciliation)**
+  - **Goal**: Guarantee full two-way data consistency across multiple live devices so invoices, clients, products, and ledger entries created on one device reliably reflect on all other devices upon synchronization.
+  - **Scope**:
+    1. *Lookback & Full Reconciliation Strategy*: Replace brittle exact-millisecond `whereGreaterThanOrEqualTo("updatedAt", lastSyncTime)` filtering with a robust lookback reconciliation window and full collection reconcile option on manual sync to prevent clock skew or delayed syncs from dropping remote records.
+    2. *Foreign Key Dependency Ordering & Transaction Safety*: Guarantee atomic, dependency-ordered ingestion into Room (BusinessProfile -> Clients -> Products -> BusinessDocuments -> LineItems -> ClientAccountEntries) with missing parent fallbacks so foreign key constraints never fail on remote pull.
+    3. *Document Sequence Multi-Device Sync*: Implement outbound push and inbound pull for `DocumentSequenceEntity`, preventing duplicate invoice numbering (`VE/XX/YYYY-YY`) when multiple devices generate documents offline.
+    4. *Bidirectional Manual & Periodic Sync Verification*: Verify multi-device scenario in unit and integration tests where Device A creates an invoice and Device B syncs and immediately renders that invoice, its line items, and ledger account entries in Room.
+  - **Status**: Completed (Verified via `./gradlew testDebugUnitTest`, `./gradlew assembleDebug`, `./gradlew assembleRelease`)
+
+- **Phase 21: Compose UI Common Component Refactoring & Code De-duplication**
+  - **Goal**: Eliminate redundant, deeply nested boilerplate across all Jetpack Compose UI screens by extracting reusable domain and layout components into clean, small, shared functions.
+  - **Scope**:
+    1. *Form Architecture & Section Extraction*: Extract shared form sections (Party Info cards, Line Item list editor, Financial Summary & GST breakdown cards, Delivery Details card) shared identically between `InvoiceScreen.kt` and `PurchaseOrderScreen.kt`.
+    2. *List & Search Screen Harmonization*: Extract common search bar + filter chips + empty state + swipeable/selectable entity cards shared across `ClientListScreen.kt`, `ProductListScreen.kt`, and `DocumentsScreen.kt`.
+    3. *Detail & Action Screen Harmonization*: Extract reusable metadata rows, financial stat banners, and dialog action bars shared across `ClientDetailScreen.kt`, `ProductDetailScreen.kt`, and `DocumentDetailScreen.kt`.
+    4. *Strict Theme & Design System Adherence*: Ensure all extracted common components adhere strictly to `DESIGN.md` tokens, touch target minimums (>= 48dp), and system font scaling.
+  - **Status**: Completed (Verified via `./gradlew testDebugUnitTest`, `./gradlew assembleDebug`, `./gradlew assembleRelease`)
+
+- **Phase 22: Performance & Recomposition Audit**
   - Goal: Verify `@Stable` and `@Immutable` contracts across all UiState classes, verify LazyColumn key stability.
   - Status: Planned
-- **Phase 21: Multi-Page PDF Handling & Export Enhancements**
+
+- **Phase 23: Multi-Page PDF Handling & Export Enhancements**
   - Goal: Extended layout for high line item counts (>10 items) across multiple A4 pages with page budget management.
   - Status: Planned

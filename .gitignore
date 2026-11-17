@@ -7,6 +7,7 @@ build/
 # Local configuration
 local.properties
 secrets.properties
+keystore.properties
 
 # IDE
 .idea/

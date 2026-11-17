@@ -13,4 +13,7 @@ interface DocumentSequenceDao {
 
     @Query("SELECT * FROM document_sequences WHERE documentType = :documentType AND financialYear = :financialYear LIMIT 1")
     suspend fun getSequence(documentType: DocumentType, financialYear: String): DocumentSequenceEntity?
+
+    @Query("SELECT * FROM document_sequences")
+    suspend fun getAll(): List<DocumentSequenceEntity>
 }
